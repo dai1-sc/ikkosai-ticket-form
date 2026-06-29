@@ -136,6 +136,16 @@
     <p id="loginError" class="error"></p>
   </div>
 
+<!-- 申請済み画面 -->
+  <div class="already-section" id="alreadySection" style="display:none;">
+    <div style="text-align:center; padding: 20px 0;">
+      <p style="font-size: 16px; margin-bottom: 12px;">✅ すでに申請を送信済みです。</p>
+      <div id="alreadyInfo" style="background:#f0f4ff; border-radius:8px; padding:12px; margin-bottom:20px; font-size:14px; color:#002366;"></div>
+      <p style="font-size:13px; color:#555; margin-bottom:20px;">回答を変更したい場合は以下から編集できます。<br>※チケット発行済みの場合は編集できません。</p>
+      <button class="btn" id="editBtn" onclick="startEdit()" style="background:#555;">回答を編集する</button>
+    </div>
+  </div>
+  
   <!-- フォーム画面 -->
   <div class="form-section" id="formSection">
     <div class="user-info" id="userInfo"></div>
@@ -208,10 +218,24 @@ function handleCredential(response) {
 
     userEmail = email;
     document.getElementById("loginSection").style.display = "none";
-    document.getElementById("formSection").style.display = "block";
     document.getElementById("userInfo").textContent = "ログイン中：" + email;
 
-    loadRemaining();
+    // 申請済みか確認
+    fetch(GAS_URL + "?mode=check&email=" + encodeURIComponent(email))
+      .then(res => res.json())
+      .then(data => {
+        if (data.exists) {
+          // 申請済み画面を表示
+          const timeLabel = data.time === "am" ? "午前の部" : "午後の部";
+          const sentLabel = data.mailSent === "sent" ? "（チケット発行済み）" : "（チケット未発行）";
+          document.getElementById("alreadyInfo").innerHTML =
+            `時間帯：<strong>${timeLabel}</strong>　枚数：<strong>${data.count}枚</strong>　${sentLabel}`;
+          document.getElementById("alreadySection").style.display = "block";
+        } else {
+          document.getElementById("formSection").style.display = "block";
+          loadRemaining();
+        }
+      });
   } catch(err) {
     document.getElementById("loginError").textContent = "ログインエラー：" + err.message;
   }
@@ -272,6 +296,61 @@ function handleCredential(response) {
     document.getElementById("submitBtn").textContent = "送信中...";
 
     fetch(GAS_URL + "?mode=submit&email=" + encodeURIComponent(userEmail) + "&name=" + encodeURIComponent(name) + "&time=" + selectedTime + "&count=" + count)
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "ok") {
+          document.getElementById("formSection").style.display = "none";
+          document.getElementById("successSection").style.display = "block";
+        } else if (data.status === "full") {
+          errorEl.textContent = "申し訳ありません。選択した時間帯が満員になりました。";
+          document.getElementById("submitBtn").disabled = false;
+          document.getElementById("submitBtn").textContent = "申請する";
+          loadRemaining();
+        } else {
+          errorEl.textContent = "エラーが発生しました。もう一度お試しください。";
+          document.getElementById("submitBtn").disabled = false;
+          document.getElementById("submitBtn").textContent = "申請する";
+        }
+      })
+      .catch(() => {
+        errorEl.textContent = "通信エラーが発生しました。";
+        document.getElementById("submitBtn").disabled = false;
+        document.getElementById("submitBtn").textContent = "申請する";
+      });
+  }
+  let isEdit = false;
+
+  function startEdit() {
+    fetch(GAS_URL + "?mode=check&email=" + encodeURIComponent(userEmail))
+      .then(res => res.json())
+      .then(data => {
+        if (data.mailSent === "sent") {
+          alert("チケットがすでに発行済みのため編集できません。");
+          return;
+        }
+        isEdit = true;
+        document.getElementById("alreadySection").style.display = "none";
+        document.getElementById("formSection").style.display = "block";
+        loadRemaining();
+      });
+  }
+
+  function submitForm() {
+    const name = document.getElementById("name").value.trim();
+    const count = document.getElementById("count").value;
+    const errorEl = document.getElementById("formError");
+
+    if (!name) { errorEl.textContent = "お名前を入力してください。"; return; }
+    if (!selectedTime) { errorEl.textContent = "時間帯を選択してください。"; return; }
+    errorEl.textContent = "";
+
+    document.getElementById("submitBtn").disabled = true;
+    document.getElementById("submitBtn").textContent = "送信中...";
+
+    // 編集か新規かでURLを変える
+    const submitMode = isEdit ? "edit" : "submit";
+
+    fetch(GAS_URL + "?mode=" + submitMode + "&email=" + encodeURIComponent(userEmail) + "&name=" + encodeURIComponent(name) + "&time=" + selectedTime + "&count=" + count)
       .then(res => res.json())
       .then(data => {
         if (data.status === "ok") {
