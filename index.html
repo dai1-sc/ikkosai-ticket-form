@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>一高祭 入場チケット申請</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Helvetica", "Arial", sans-serif;
+      background: #f2f2f2;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      max-width: 480px;
+      width: 100%;
+      padding: 30px;
+    }
+    .header {
+      background: #002366;
+      margin: -30px -30px 24px;
+      padding: 20px;
+      border-radius: 12px 12px 0 0;
+      text-align: center;
+    }
+    .header h1 {
+      color: white;
+      font-size: 18px;
+    }
+    .login-section {
+      text-align: center;
+      padding: 20px 0;
+    }
+    .login-section p {
+      margin-bottom: 16px;
+      color: #555;
+      font-size: 14px;
+    }
+    .form-section { display: none; }
+    .user-info {
+      background: #f0f4ff;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #002366;
+    }
+    .form-group { margin-bottom: 16px; }
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #333;
+    }
+    input[type="text"], select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+    .time-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .time-option {
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .time-option.selected {
+      border-color: #002366;
+      background: #f0f4ff;
+    }
+    .time-option.full {
+      background: #f5f5f5;
+      color: #aaa;
+      cursor: not-allowed;
+      border-color: #ddd;
+    }
+    .time-option .label { font-weight: bold; font-size: 15px; }
+    .time-option .remaining { font-size: 12px; margin-top: 4px; }
+    .remaining.ok { color: #007b00; }
+    .remaining.few { color: #e67e00; }
+    .remaining.none { color: #cc0000; }
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: #002366;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn:disabled { background: #aaa; cursor: not-allowed; }
+    .error { color: #cc0000; font-size: 13px; margin-top: 6px; }
+    .success-section {
+      display: none;
+      text-align: center;
+      padding: 20px 0;
+    }
+    .success-section h2 { color: #007b00; margin-bottom: 12px; }
+    .success-section p { color: #555; font-size: 14px; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <h1>一高祭・体育部門 入場チケット申請</h1>
+  </div>
+
+  <!-- ログイン画面 -->
+  <div class="login-section" id="loginSection">
+    <p>申請には学校のGoogleアカウント<br>（@g.bears.ed.jp）でのログインが必要です。</p>
+    <div id="g_id_onload"
+      data-client_id="254956450031-t49krcv9oncctqnvjbh5dmempvo418su.apps.googleusercontent.com"
+      data-callback="handleCredential"
+      data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin" data-type="standard" data-size="large" data-text="signin_with" data-shape="rectangular" data-logo_alignment="left"></div>
+    <p id="loginError" class="error"></p>
+  </div>
+
+  <!-- フォーム画面 -->
+  <div class="form-section" id="formSection">
+    <div class="user-info" id="userInfo"></div>
+
+    <div class="form-group">
+      <label>お名前</label>
+      <input type="text" id="name" placeholder="例：白梅 花子">
+    </div>
+
+    <div class="form-group">
+      <label>入場時間帯</label>
+      <div class="time-options">
+        <div class="time-option" id="opt-am" onclick="selectTime('am')">
+          <div class="label">午前の部</div>
+          <div class="remaining" id="remaining-am">読み込み中...</div>
+        </div>
+        <div class="time-option" id="opt-pm" onclick="selectTime('pm')">
+          <div class="label">午後の部</div>
+          <div class="remaining" id="remaining-pm">読み込み中...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>希望枚数（最大5枚）</label>
+      <select id="count">
+        <option value="1">1枚</option>
+        <option value="2">2枚</option>
+        <option value="3">3枚</option>
+        <option value="4">4枚</option>
+        <option value="5">5枚</option>
+      </select>
+    </div>
+
+    <p id="formError" class="error"></p>
+    <button class="btn" id="submitBtn" onclick="submitForm()">申請する</button>
+  </div>
+
+  <!-- 完了画面 -->
+  <div class="success-section" id="successSection">
+    <h2>✅ 申請完了！</h2>
+    <p>チケットは後日メールでお送りします。<br>しばらくお待ちください。</p>
+  </div>
+</div>
+
+<script>
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxdMLfj6qHITIEInB52DC1DJqojKlb-dWb43AoqMchlkCFyuqRpZtqB_0u6vcFydGw/exec";
+  const ALLOWED_DOMAIN = "g.bears.ed.jp";
+  const CAPACITY = 500;
+
+  let userEmail = "";
+  let selectedTime = "";
+
+  function handleCredential(response) {
+    const payload = JSON.parse(atob(response.credential.split('.')[1]));
+    const email = payload.email;
+
+    if (!email.endsWith("@" + ALLOWED_DOMAIN)) {
+      document.getElementById("loginError").textContent = "学校のアカウント（@g.bears.ed.jp）でログインしてください。";
+      return;
+    }
+
+    userEmail = email;
+    document.getElementById("loginSection").style.display = "none";
+    document.getElementById("formSection").style.display = "block";
+    document.getElementById("userInfo").textContent = "ログイン中：" + email;
+
+    loadRemaining();
+  }
+
+  function loadRemaining() {
+    fetch(GAS_URL + "?mode=remaining")
+      .then(res => res.json())
+      .then(data => {
+        updateOption("am", data.am);
+        updateOption("pm", data.pm);
+      })
+      .catch(() => {
+        document.getElementById("remaining-am").textContent = "取得失敗";
+        document.getElementById("remaining-pm").textContent = "取得失敗";
+      });
+  }
+
+  function updateOption(time, count) {
+    const remaining = CAPACITY - count;
+    const el = document.getElementById("remaining-" + time);
+    const opt = document.getElementById("opt-" + time);
+
+    if (remaining <= 0) {
+      el.textContent = "満員";
+      el.className = "remaining none";
+      opt.classList.add("full");
+      opt.onclick = null;
+    } else if (remaining <= 50) {
+      el.textContent = "残り" + remaining + "枚";
+      el.className = "remaining few";
+    } else {
+      el.textContent = "残り" + remaining + "枚";
+      el.className = "remaining ok";
+    }
+  }
+
+  function selectTime(time) {
+    const opt = document.getElementById("opt-" + time);
+    if (opt.classList.contains("full")) return;
+
+    selectedTime = time;
+    document.getElementById("opt-am").classList.remove("selected");
+    document.getElementById("opt-pm").classList.remove("selected");
+    opt.classList.add("selected");
+  }
+
+  function submitForm() {
+    const name = document.getElementById("name").value.trim();
+    const count = document.getElementById("count").value;
+    const errorEl = document.getElementById("formError");
+
+    if (!name) { errorEl.textContent = "お名前を入力してください。"; return; }
+    if (!selectedTime) { errorEl.textContent = "時間帯を選択してください。"; return; }
+    errorEl.textContent = "";
+
+    document.getElementById("submitBtn").disabled = true;
+    document.getElementById("submitBtn").textContent = "送信中...";
+
+    fetch(GAS_URL + "?mode=submit&email=" + encodeURIComponent(userEmail) + "&name=" + encodeURIComponent(name) + "&time=" + selectedTime + "&count=" + count)
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "ok") {
+          document.getElementById("formSection").style.display = "none";
+          document.getElementById("successSection").style.display = "block";
+        } else if (data.status === "full") {
+          errorEl.textContent = "申し訳ありません。選択した時間帯が満員になりました。";
+          document.getElementById("submitBtn").disabled = false;
+          document.getElementById("submitBtn").textContent = "申請する";
+          loadRemaining();
+        } else {
+          errorEl.textContent = "エラーが発生しました。もう一度お試しください。";
+          document.getElementById("submitBtn").disabled = false;
+          document.getElementById("submitBtn").textContent = "申請する";
+        }
+      })
+      .catch(() => {
+        errorEl.textContent = "通信エラーが発生しました。";
+        document.getElementById("submitBtn").disabled = false;
+        document.getElementById("submitBtn").textContent = "申請する";
+      });
+  }
+</script>
+</body>
+</html>
