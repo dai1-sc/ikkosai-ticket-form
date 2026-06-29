@@ -4,192 +4,770 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>一高祭 入場チケット申請</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ===== リセット & ベース ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:      #002366;
+      --navy-dark: #001540;
+      --navy-mid:  #0a3580;
+      --gold:      #F0A500;
+      --gold-light:#FFF3CC;
+      --green:     #1a7f37;
+      --green-bg:  #eafaf0;
+      --red:       #c0392b;
+      --red-bg:    #fdf2f0;
+      --orange:    #d4640a;
+      --gray-100:  #f8f9fb;
+      --gray-200:  #eef0f4;
+      --gray-400:  #9ba3b2;
+      --gray-600:  #555e72;
+      --gray-800:  #222b3a;
+      --white:     #ffffff;
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --shadow-card: 0 8px 32px rgba(0,35,102,0.13);
+      --transition: 0.22s cubic-bezier(.4,0,.2,1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+
+    html { font-size: 16px; }
+
     body {
-      font-family: "Helvetica", "Arial", sans-serif;
-      background: #f2f2f2;
-      padding: 20px;
+      font-family: 'Noto Sans JP', 'Helvetica', 'Arial', sans-serif;
+      background: linear-gradient(135deg, #001540 0%, #002f8a 50%, #003fa8 100%);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-    .card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      max-width: 480px;
-      width: 100%;
-      padding: 30px;
-    }
-    .header {
-      background: #002366;
-      margin: -30px -30px 24px;
       padding: 20px;
-      border-radius: 12px 12px 0 0;
-      text-align: center;
     }
-    .header h1 {
-      color: white;
-      font-size: 18px;
-    }
-    .login-section {
-      text-align: center;
-      padding: 20px 0;
-    }
-    .login-section p {
-      margin-bottom: 16px;
-      color: #555;
-      font-size: 14px;
-    }
-    .form-section { display: none; }
-    .user-info {
-      background: #f0f4ff;
-      border-radius: 8px;
-      padding: 10px 14px;
-      margin-bottom: 20px;
-      font-size: 14px;
-      color: #002366;
-    }
-    .form-group { margin-bottom: 16px; }
-    label {
-      display: block;
-      font-size: 14px;
-      font-weight: bold;
-      margin-bottom: 6px;
-      color: #333;
-    }
-    input[type="text"], select {
+
+    /* ===== カード ===== */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      max-width: 520px;
       width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 15px;
+      overflow: hidden;
     }
+
+    /* ===== ヘッダー ===== */
+    .card-header {
+      background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy-mid) 100%);
+      padding: 28px 32px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card-header::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 160px; height: 160px;
+      background: rgba(240,165,0,0.12);
+      border-radius: 50%;
+    }
+    .card-header::after {
+      content: '';
+      position: absolute;
+      bottom: -20px; left: 30px;
+      width: 80px; height: 80px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50%;
+    }
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(240,165,0,0.2);
+      border: 1px solid rgba(240,165,0,0.4);
+      color: var(--gold);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 4px 10px;
+      border-radius: 100px;
+      margin-bottom: 10px;
+    }
+    .card-header h1 {
+      color: var(--white);
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.4;
+      position: relative;
+    }
+    .card-header p {
+      color: rgba(255,255,255,0.65);
+      font-size: 13px;
+      margin-top: 6px;
+      position: relative;
+    }
+
+    /* ===== ステップインジケーター ===== */
+    .steps {
+      display: flex;
+      align-items: center;
+      padding: 18px 32px;
+      background: var(--gray-100);
+      border-bottom: 1px solid var(--gray-200);
+      gap: 0;
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      position: relative;
+    }
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: calc(100% - 90px);
+      height: 2px;
+      background: var(--gray-200);
+      left: 90px;
+      transition: background var(--transition);
+    }
+    .step.done:not(:last-child)::after { background: var(--navy); }
+    .step-icon {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--gray-200);
+      color: var(--gray-400);
+      font-size: 13px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background var(--transition), color var(--transition);
+    }
+    .step.active .step-icon { background: var(--navy); color: var(--white); }
+    .step.done .step-icon { background: var(--green); color: var(--white); }
+    .step-label {
+      font-size: 11px;
+      color: var(--gray-400);
+      font-weight: 500;
+      white-space: nowrap;
+      transition: color var(--transition);
+    }
+    .step.active .step-label { color: var(--navy); font-weight: 700; }
+    .step.done .step-label { color: var(--green); }
+
+    /* ===== コンテンツ ===== */
+    .card-body { padding: 28px 32px 32px; }
+
+    /* ===== セクション表示制御 ===== */
+    .section {
+      display: none;
+      animation: fadeSlideIn 0.3s ease both;
+    }
+    .section.active { display: block; }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== ログイン画面 ===== */
+    .login-intro {
+      text-align: center;
+      padding: 8px 0 24px;
+    }
+    .login-icon {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 28px;
+    }
+    .login-intro h2 {
+      font-size: 17px; font-weight: 700; color: var(--gray-800);
+      margin-bottom: 8px;
+    }
+    .login-intro p {
+      font-size: 14px; color: var(--gray-600); line-height: 1.7;
+    }
+    .login-divider {
+      text-align: center;
+      position: relative;
+      margin: 20px 0;
+      color: var(--gray-400);
+      font-size: 12px;
+    }
+    .login-divider::before, .login-divider::after {
+      content: '';
+      position: absolute;
+      top: 50%; width: 40%; height: 1px;
+      background: var(--gray-200);
+    }
+    .login-divider::before { left: 0; }
+    .login-divider::after { right: 0; }
+    .google-btn-wrap {
+      display: flex; justify-content: center;
+    }
+    .info-box {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--gray-600);
+      display: flex; gap: 8px; align-items: flex-start;
+      margin-top: 16px;
+    }
+    .info-box .icon { flex-shrink: 0; color: var(--navy); margin-top: 1px; }
+
+    /* ===== ユーザー情報バー ===== */
+    .user-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: var(--navy);
+    }
+    .user-bar .icon { font-size: 18px; }
+
+    /* ===== フォームグループ ===== */
+    .form-group { margin-bottom: 20px; }
+    .form-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gray-800);
+      margin-bottom: 8px;
+    }
+    .form-label .label-icon { font-size: 16px; }
+    .required-badge {
+      font-size: 10px;
+      background: var(--red);
+      color: white;
+      padding: 1px 6px;
+      border-radius: 100px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-family: inherit;
+      color: var(--gray-800);
+      background: var(--white);
+      transition: border-color var(--transition), box-shadow var(--transition);
+      outline: none;
+    }
+    input[type="text"]:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(0,35,102,0.12);
+    }
+    input[type="text"]::placeholder { color: var(--gray-400); }
+
+    select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-family: inherit;
+      color: var(--gray-800);
+      background: var(--white);
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23555e72' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      cursor: pointer;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      outline: none;
+    }
+    select:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(0,35,102,0.12);
+    }
+
+    /* ===== 時間帯選択カード ===== */
     .time-options {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
     .time-option {
-      border: 2px solid #ccc;
-      border-radius: 8px;
-      padding: 14px;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      padding: 16px 12px;
       text-align: center;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: border-color var(--transition), background var(--transition), transform var(--transition), box-shadow var(--transition);
+      position: relative;
+      outline: none;
+    }
+    .time-option:hover:not(.full) {
+      border-color: var(--navy);
+      background: var(--gray-100);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,35,102,0.1);
+    }
+    .time-option:focus-visible {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(0,35,102,0.18);
     }
     .time-option.selected {
-      border-color: #002366;
-      background: #f0f4ff;
+      border-color: var(--navy);
+      background: #eef2ff;
+      box-shadow: 0 4px 16px rgba(0,35,102,0.15);
+    }
+    .time-option.selected::before {
+      content: '✓';
+      position: absolute;
+      top: 8px; right: 10px;
+      font-size: 13px;
+      color: var(--navy);
+      font-weight: 900;
     }
     .time-option.full {
-      background: #f5f5f5;
-      color: #aaa;
+      background: var(--gray-100);
+      color: var(--gray-400);
       cursor: not-allowed;
-      border-color: #ddd;
+      border-color: var(--gray-200);
+      opacity: 0.7;
     }
-    .time-option .label { font-weight: bold; font-size: 15px; }
-    .time-option .remaining { font-size: 12px; margin-top: 4px; }
-    .remaining.ok { color: #007b00; }
-    .remaining.few { color: #e67e00; }
-    .remaining.none { color: #cc0000; }
+    .time-option .time-label {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--gray-800);
+      margin-bottom: 8px;
+    }
+    .time-option.selected .time-label { color: var(--navy); }
+    .time-option.full .time-label { color: var(--gray-400); }
+
+    /* 残席バー */
+    .capacity-bar {
+      height: 5px;
+      background: var(--gray-200);
+      border-radius: 100px;
+      overflow: hidden;
+      margin: 6px 0 5px;
+    }
+    .capacity-fill {
+      height: 100%;
+      border-radius: 100px;
+      transition: width 0.6s cubic-bezier(.4,0,.2,1);
+      background: var(--green);
+    }
+    .capacity-fill.few { background: var(--orange); }
+    .capacity-fill.none { background: var(--red); }
+
+    .remaining {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .remaining.ok   { color: var(--green); }
+    .remaining.few  { color: var(--orange); }
+    .remaining.none { color: var(--red); }
+
+    /* ===== ボタン ===== */
     .btn {
       width: 100%;
-      padding: 12px;
-      background: #002366;
-      color: white;
+      padding: 14px 20px;
       border: none;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
       cursor: pointer;
-      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+      outline: none;
+      min-height: 52px;
     }
-    .btn:disabled { background: #aaa; cursor: not-allowed; }
-    .error { color: #cc0000; font-size: 13px; margin-top: 6px; }
-    .success-section {
+    .btn:focus-visible {
+      box-shadow: 0 0 0 3px rgba(0,35,102,0.28);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+      color: var(--white);
+      box-shadow: 0 4px 12px rgba(0,35,102,0.25);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(0,35,102,0.3);
+    }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+    .btn-primary:disabled {
+      background: var(--gray-400);
+      box-shadow: none;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .btn-secondary {
+      background: var(--white);
+      color: var(--gray-600);
+      border: 2px solid var(--gray-200);
+      box-shadow: none;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--gray-100);
+      border-color: var(--gray-400);
+    }
+    .btn-spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== エラー ===== */
+    .error-msg {
       display: none;
-      text-align: center;
-      padding: 20px 0;
+      align-items: center;
+      gap: 8px;
+      background: var(--red-bg);
+      border: 1px solid #f5c6c2;
+      border-radius: var(--radius-sm);
+      color: var(--red);
+      font-size: 14px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      animation: fadeSlideIn 0.2s ease both;
     }
-    .success-section h2 { color: #007b00; margin-bottom: 12px; }
-    .success-section p { color: #555; font-size: 14px; }
+    .error-msg.show { display: flex; }
+    .error-msg .icon { flex-shrink: 0; font-size: 16px; }
+
+    /* ===== 申請済み画面 ===== */
+    .already-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .already-icon {
+      width: 48px; height: 48px; flex-shrink: 0;
+      border-radius: 50%;
+      background: var(--green-bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .already-header h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--gray-800);
+    }
+    .already-header p {
+      font-size: 13px;
+      color: var(--gray-600);
+      margin-top: 2px;
+    }
+    .info-card {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+    .info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 14px;
+    }
+    .info-row:not(:last-child) {
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .info-row .key {
+      color: var(--gray-600);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .info-row .val {
+      font-weight: 700;
+      color: var(--gray-800);
+    }
+    .ticket-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 100px;
+    }
+    .ticket-status.issued {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid #a3e0b8;
+    }
+    .ticket-status.pending {
+      background: var(--gold-light);
+      color: #a07000;
+      border: 1px solid #f5d880;
+    }
+    .edit-note {
+      font-size: 13px;
+      color: var(--gray-600);
+      text-align: center;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    /* ===== 完了画面 ===== */
+    .success-wrap {
+      text-align: center;
+      padding: 8px 0;
+    }
+    .success-icon {
+      width: 72px; height: 72px;
+      background: var(--green-bg);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 34px;
+      margin: 0 auto 20px;
+      animation: popIn 0.4s cubic-bezier(.175,.885,.32,1.275) both;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .success-wrap h2 {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--green);
+      margin-bottom: 10px;
+    }
+    .success-wrap p {
+      font-size: 14px;
+      color: var(--gray-600);
+      line-height: 1.8;
+    }
+    .success-note {
+      background: var(--gold-light);
+      border: 1px solid #f5d880;
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 13px;
+      color: #7a5500;
+      margin-top: 20px;
+      text-align: left;
+      display: flex; gap: 8px; align-items: flex-start;
+    }
+
+    /* ===== レスポンシブ ===== */
+    @media (max-width: 480px) {
+      body { padding: 12px; }
+      .card-body { padding: 20px 20px 24px; }
+      .card-header { padding: 22px 20px 20px; }
+      .steps { padding: 14px 20px; }
+      .card-header h1 { font-size: 16px; }
+      .step-label { display: none; }
+      .step:not(:last-child)::after { left: 40px; width: calc(100% - 40px); }
+    }
   </style>
 </head>
 <body>
-<div class="card">
-  <div class="header">
-    <h1>一高祭・体育部門 入場チケット申請</h1>
+
+<div class="card" role="main">
+  <!-- ヘッダー -->
+  <div class="card-header">
+    <div class="header-badge">🎫 TICKET APPLICATION</div>
+    <h1>一高祭・体育部門<br>入場チケット申請</h1>
+    <p>学校アカウントでログインして申請してください</p>
   </div>
 
-  <!-- ログイン画面 -->
-  <div class="login-section" id="loginSection">
-    <p>申請には学校のGoogleアカウント<br>（@g.bears.ed.jp）でのログインが必要です。</p>
-    <div id="g_id_onload"
-      data-client_id="254956450031-t49krcv9oncctqnvjbh5dmempvo418su.apps.googleusercontent.com"
-      data-callback="handleCredential"
-      data-auto_prompt="false">
+  <!-- ステップインジケーター -->
+  <div class="steps" role="navigation" aria-label="申請ステップ">
+    <div class="step active" id="step1" aria-current="step">
+      <div class="step-icon" aria-hidden="true">1</div>
+      <span class="step-label">ログイン</span>
     </div>
-    <div class="g_id_signin" data-type="standard" data-size="large" data-text="signin_with" data-shape="rectangular" data-logo_alignment="left"></div>
-    <p id="loginError" class="error"></p>
-  </div>
-
-<!-- 申請済み画面 -->
-  <div class="already-section" id="alreadySection" style="display:none;">
-    <div style="text-align:center; padding: 20px 0;">
-      <p style="font-size: 16px; margin-bottom: 12px;">✅ すでに申請を送信済みです。</p>
-      <div id="alreadyInfo" style="background:#f0f4ff; border-radius:8px; padding:12px; margin-bottom:20px; font-size:14px; color:#002366;"></div>
-      <p style="font-size:13px; color:#555; margin-bottom:20px;">回答を変更したい場合は以下から編集できます。<br>※チケット発行済みの場合は編集できません。</p>
-      <button class="btn" id="editBtn" onclick="startEdit()" style="background:#555;">回答を編集する</button>
+    <div class="step" id="step2">
+      <div class="step-icon" aria-hidden="true">2</div>
+      <span class="step-label">情報入力</span>
+    </div>
+    <div class="step" id="step3">
+      <div class="step-icon" aria-hidden="true">3</div>
+      <span class="step-label">完了</span>
     </div>
   </div>
-  
-  <!-- フォーム画面 -->
-  <div class="form-section" id="formSection">
-    <div class="user-info" id="userInfo"></div>
 
-    <div class="form-group">
-      <label>お名前</label>
-      <input type="text" id="name" placeholder="例：白梅 花子">
-    </div>
+  <div class="card-body">
 
-    <div class="form-group">
-      <label>入場時間帯</label>
-      <div class="time-options">
-        <div class="time-option" id="opt-am" onclick="selectTime('am')">
-          <div class="label">午前の部</div>
-          <div class="remaining" id="remaining-am">読み込み中...</div>
+    <!-- ① ログイン画面 -->
+    <div class="section active" id="loginSection" role="region" aria-label="ログイン">
+      <div class="login-intro">
+        <div class="login-icon" aria-hidden="true">🔐</div>
+        <h2>学校アカウントでログイン</h2>
+        <p>申請には学校のGoogleアカウント<br>（@g.bears.ed.jp）が必要です</p>
+      </div>
+      <div class="login-divider" aria-hidden="true">こちらからログイン</div>
+      <div class="google-btn-wrap">
+        <div id="g_id_onload"
+          data-client_id="254956450031-t49krcv9oncctqnvjbh5dmempvo418su.apps.googleusercontent.com"
+          data-callback="handleCredential"
+          data-auto_prompt="false">
         </div>
-        <div class="time-option" id="opt-pm" onclick="selectTime('pm')">
-          <div class="label">午後の部</div>
-          <div class="remaining" id="remaining-pm">読み込み中...</div>
+        <div class="g_id_signin" data-type="standard" data-size="large" data-text="signin_with" data-shape="rectangular" data-logo_alignment="left"></div>
+      </div>
+      <div class="info-box" role="note">
+        <span class="icon" aria-hidden="true">ℹ️</span>
+        <span>個人のGoogleアカウントではログインできません。学校から配付されたアカウントをお使いください。</span>
+      </div>
+      <div class="error-msg" id="loginError" role="alert" aria-live="assertive">
+        <span class="icon" aria-hidden="true">⚠️</span>
+        <span id="loginErrorText"></span>
+      </div>
+    </div>
+
+    <!-- ② 申請済み画面 -->
+    <div class="section" id="alreadySection" role="region" aria-label="申請済み確認">
+      <div class="already-header">
+        <div class="already-icon" aria-hidden="true">✅</div>
+        <div>
+          <h2>申請を受け付けています</h2>
+          <p>以下の内容で申請が完了しています</p>
+        </div>
+      </div>
+
+      <div class="info-card" role="table" aria-label="申請内容">
+        <div class="info-row" role="row">
+          <span class="key" role="rowheader"><span aria-hidden="true">🕐</span> 入場時間帯</span>
+          <span class="val" id="alreadyTime" role="cell">—</span>
+        </div>
+        <div class="info-row" role="row">
+          <span class="key" role="rowheader"><span aria-hidden="true">🎟️</span> 申請枚数</span>
+          <span class="val" id="alreadyCount" role="cell">—</span>
+        </div>
+        <div class="info-row" role="row">
+          <span class="key" role="rowheader"><span aria-hidden="true">📬</span> チケット発行</span>
+          <span id="alreadyStatus" role="cell">—</span>
+        </div>
+      </div>
+
+      <p class="edit-note">
+        回答を変更したい場合は「申請内容を編集する」から修正できます。<br>
+        <strong>チケット発行済みの場合は編集できません。</strong>
+      </p>
+
+      <button class="btn btn-secondary" id="editBtn" onclick="startEdit()">
+        <span aria-hidden="true">✏️</span> 申請内容を編集する
+      </button>
+    </div>
+
+    <!-- ③ フォーム画面 -->
+    <div class="section" id="formSection" role="region" aria-label="申請フォーム">
+      <div class="user-bar" id="userInfo" aria-label="ログイン中のアカウント">
+        <span class="icon" aria-hidden="true">👤</span>
+        <span id="userEmail">—</span>
+      </div>
+
+      <div class="error-msg" id="formError" role="alert" aria-live="assertive">
+        <span class="icon" aria-hidden="true">⚠️</span>
+        <span id="formErrorText"></span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="name">
+          <span class="label-icon" aria-hidden="true">✏️</span>
+          お名前
+          <span class="required-badge" aria-label="必須">必須</span>
+        </label>
+        <input type="text" id="name" placeholder="例：白梅 花子" autocomplete="name"
+               aria-required="true" aria-describedby="nameHint">
+        <p id="nameHint" style="font-size:12px; color:var(--gray-400); margin-top:5px;">
+          チケットに印字されます。正確に入力してください。
+        </p>
+      </div>
+
+      <div class="form-group">
+        <fieldset style="border:none; padding:0; margin:0;">
+          <legend class="form-label">
+            <span class="label-icon" aria-hidden="true">🕐</span>
+            入場時間帯
+            <span class="required-badge" aria-label="必須">必須</span>
+          </legend>
+          <div class="time-options" role="radiogroup" aria-label="入場時間帯を選択">
+            <div class="time-option" id="opt-am" role="radio" aria-checked="false" tabindex="0"
+                 onclick="selectTime('am')" onkeydown="if(event.key==='Enter'||event.key===' ')selectTime('am')">
+              <div class="time-label">午前の部</div>
+              <div class="capacity-bar" aria-hidden="true">
+                <div class="capacity-fill" id="fill-am" style="width:0%"></div>
+              </div>
+              <div class="remaining" id="remaining-am" aria-live="polite">読み込み中...</div>
+            </div>
+            <div class="time-option" id="opt-pm" role="radio" aria-checked="false" tabindex="0"
+                 onclick="selectTime('pm')" onkeydown="if(event.key==='Enter'||event.key===' ')selectTime('pm')">
+              <div class="time-label">午後の部</div>
+              <div class="capacity-bar" aria-hidden="true">
+                <div class="capacity-fill" id="fill-pm" style="width:0%"></div>
+              </div>
+              <div class="remaining" id="remaining-pm" aria-live="polite">読み込み中...</div>
+            </div>
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="count">
+          <span class="label-icon" aria-hidden="true">🎟️</span>
+          希望枚数
+          <span class="required-badge" aria-label="必須">必須</span>
+        </label>
+        <select id="count" aria-required="true">
+          <option value="1">1枚</option>
+          <option value="2">2枚</option>
+          <option value="3">3枚</option>
+          <option value="4">4枚</option>
+          <option value="5">5枚（最大）</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" id="submitBtn" onclick="submitForm()">
+        <span id="submitLabel">申請する</span>
+      </button>
+    </div>
+
+    <!-- ④ 完了画面 -->
+    <div class="section" id="successSection" role="region" aria-label="申請完了">
+      <div class="success-wrap">
+        <div class="success-icon" aria-hidden="true">🎉</div>
+        <h2>申請が完了しました！</h2>
+        <p>チケットは後日、登録のメールアドレスへ<br>お送りします。しばらくお待ちください。</p>
+        <div class="success-note" role="note">
+          <span aria-hidden="true">📬</span>
+          <span>迷惑メールフォルダに入る場合があります。数日経っても届かない場合は担当の先生にお問い合わせください。</span>
         </div>
       </div>
     </div>
 
-    <div class="form-group">
-      <label>希望枚数（最大5枚）</label>
-      <select id="count">
-        <option value="1">1枚</option>
-        <option value="2">2枚</option>
-        <option value="3">3枚</option>
-        <option value="4">4枚</option>
-        <option value="5">5枚</option>
-      </select>
-    </div>
-
-    <p id="formError" class="error"></p>
-    <button class="btn" id="submitBtn" onclick="submitForm()">申請する</button>
-  </div>
-
-  <!-- 完了画面 -->
-  <div class="success-section" id="successSection">
-    <h2>✅ 申請完了！</h2>
-    <p>チケットは後日メールでお送りします。<br>しばらくお待ちください。</p>
-  </div>
-</div>
+  </div><!-- /card-body -->
+</div><!-- /card -->
 
 <script>
   const GAS_URL = "https://script.google.com/macros/s/AKfycbxdMLfj6qHITIEInB52DC1DJqojKlb-dWb43AoqMchlkCFyuqRpZtqB_0u6vcFydGw/exec";
@@ -198,50 +776,101 @@
 
   let userEmail = "";
   let selectedTime = "";
+  let isEdit = false;
 
-function handleCredential(response) {
-  try {
-    const base64Url = response.credential.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64).split('').map(c =>
-        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-      ).join('')
-    );
-    const payload = JSON.parse(jsonPayload);
-    const email = payload.email;
-
-    if (!email.endsWith("@" + ALLOWED_DOMAIN)) {
-      document.getElementById("loginError").textContent = "学校のアカウント（@g.bears.ed.jp）でログインしてください。";
-      return;
-    }
-
-    userEmail = email;
-    document.getElementById("loginSection").style.display = "none";
-    document.getElementById("userInfo").textContent = "ログイン中：" + email;
-
-    // 申請済みか確認
-    fetch(GAS_URL + "?mode=check&email=" + encodeURIComponent(email))
-      .then(res => res.json())
-      .then(data => {
-        if (data.exists) {
-          // 申請済み画面を表示
-          const timeLabel = data.time === "am" ? "午前の部" : "午後の部";
-          const sentLabel = data.mailSent === "sent" ? "（チケット発行済み）" : "（チケット未発行）";
-          document.getElementById("alreadyInfo").innerHTML =
-            `時間帯：<strong>${timeLabel}</strong>　枚数：<strong>${data.count}枚</strong>　${sentLabel}`;
-          document.getElementById("alreadySection").style.display = "block";
-        } else {
-          document.getElementById("formSection").style.display = "block";
-          loadRemaining();
-        }
-      });
-  } catch(err) {
-    document.getElementById("loginError").textContent = "ログインエラー：" + err.message;
+  /* ===== ステップ更新 ===== */
+  function setStep(active) {
+    [1, 2, 3].forEach(n => {
+      const el = document.getElementById('step' + n);
+      el.classList.remove('active', 'done');
+      el.removeAttribute('aria-current');
+      const icon = el.querySelector('.step-icon');
+      if (n < active) {
+        el.classList.add('done');
+        icon.textContent = '✓';
+      } else if (n === active) {
+        el.classList.add('active');
+        el.setAttribute('aria-current', 'step');
+        icon.textContent = n;
+      } else {
+        icon.textContent = n;
+      }
+    });
   }
-}
 
+  /* ===== セクション切替 ===== */
+  function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  /* ===== エラー表示 ===== */
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    const textEl = document.getElementById(id + 'Text');
+    if (msg) {
+      textEl.textContent = msg;
+      el.classList.add('show');
+    } else {
+      el.classList.remove('show');
+    }
+  }
+
+  /* ===== Google ログイン ===== */
+  function handleCredential(response) {
+    try {
+      const base64Url = response.credential.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64).split('').map(c =>
+          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join('')
+      );
+      const payload = JSON.parse(jsonPayload);
+      const email = payload.email;
+
+      if (!email.endsWith("@" + ALLOWED_DOMAIN)) {
+        showError('loginError', '学校のアカウント（@g.bears.ed.jp）でログインしてください。個人アカウントは使用できません。');
+        return;
+      }
+
+      userEmail = email;
+      document.getElementById("userEmail").textContent = "ログイン中：" + email;
+
+      fetch(GAS_URL + "?mode=check&email=" + encodeURIComponent(email))
+        .then(res => res.json())
+        .then(data => {
+          if (data.exists) {
+            // 申請済み
+            const timeLabel = data.time === "am" ? "午前の部" : "午後の部";
+            document.getElementById("alreadyTime").textContent = timeLabel;
+            document.getElementById("alreadyCount").textContent = data.count + "枚";
+            const statusEl = document.getElementById("alreadyStatus");
+            if (data.mailSent === "sent") {
+              statusEl.innerHTML = '<span class="ticket-status issued">✅ 発行済み</span>';
+            } else {
+              statusEl.innerHTML = '<span class="ticket-status pending">⏳ 準備中</span>';
+            }
+            setStep(2);
+            showSection('alreadySection');
+          } else {
+            setStep(2);
+            showSection('formSection');
+            loadRemaining();
+          }
+        })
+        .catch(() => {
+          showError('loginError', '通信エラーが発生しました。ページを再読み込みしてお試しください。');
+        });
+    } catch (err) {
+      showError('loginError', 'ログインエラー：' + err.message);
+    }
+  }
+
+  /* ===== 残席読み込み ===== */
   function loadRemaining() {
+    document.getElementById("remaining-am").textContent = "読み込み中...";
+    document.getElementById("remaining-pm").textContent = "読み込み中...";
     fetch(GAS_URL + "?mode=remaining")
       .then(res => res.json())
       .then(data => {
@@ -256,121 +885,108 @@ function handleCredential(response) {
 
   function updateOption(time, count) {
     const remaining = CAPACITY - count;
-    const el = document.getElementById("remaining-" + time);
+    const remEl = document.getElementById("remaining-" + time);
+    const fillEl = document.getElementById("fill-" + time);
     const opt = document.getElementById("opt-" + time);
+    const usedPct = Math.min((count / CAPACITY) * 100, 100);
+
+    // バーアニメーション（少し遅延させて見せる）
+    setTimeout(() => { fillEl.style.width = usedPct + "%"; }, 100);
 
     if (remaining <= 0) {
-      el.textContent = "満員";
-      el.className = "remaining none";
+      remEl.textContent = "満員";
+      remEl.className = "remaining none";
+      fillEl.className = "capacity-fill none";
       opt.classList.add("full");
+      opt.setAttribute('aria-disabled', 'true');
+      opt.setAttribute('tabindex', '-1');
       opt.onclick = null;
+      opt.onkeydown = null;
     } else if (remaining <= 50) {
-      el.textContent = "残り" + remaining + "枚";
-      el.className = "remaining few";
+      remEl.textContent = "残り" + remaining + "枚";
+      remEl.className = "remaining few";
+      fillEl.className = "capacity-fill few";
     } else {
-      el.textContent = "残り" + remaining + "枚";
-      el.className = "remaining ok";
+      remEl.textContent = "残り" + remaining + "枚";
+      remEl.className = "remaining ok";
+      fillEl.className = "capacity-fill";
     }
   }
 
+  /* ===== 時間帯選択 ===== */
   function selectTime(time) {
     const opt = document.getElementById("opt-" + time);
     if (opt.classList.contains("full")) return;
 
     selectedTime = time;
-    document.getElementById("opt-am").classList.remove("selected");
-    document.getElementById("opt-pm").classList.remove("selected");
+    ["am", "pm"].forEach(t => {
+      const el = document.getElementById("opt-" + t);
+      el.classList.remove("selected");
+      el.setAttribute('aria-checked', 'false');
+    });
     opt.classList.add("selected");
+    opt.setAttribute('aria-checked', 'true');
   }
 
-  function submitForm() {
-    const name = document.getElementById("name").value.trim();
-    const count = document.getElementById("count").value;
-    const errorEl = document.getElementById("formError");
-
-    if (!name) { errorEl.textContent = "お名前を入力してください。"; return; }
-    if (!selectedTime) { errorEl.textContent = "時間帯を選択してください。"; return; }
-    errorEl.textContent = "";
-
-    document.getElementById("submitBtn").disabled = true;
-    document.getElementById("submitBtn").textContent = "送信中...";
-
-    fetch(GAS_URL + "?mode=submit&email=" + encodeURIComponent(userEmail) + "&name=" + encodeURIComponent(name) + "&time=" + selectedTime + "&count=" + count)
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === "ok") {
-          document.getElementById("formSection").style.display = "none";
-          document.getElementById("successSection").style.display = "block";
-        } else if (data.status === "full") {
-          errorEl.textContent = "申し訳ありません。選択した時間帯が満員になりました。";
-          document.getElementById("submitBtn").disabled = false;
-          document.getElementById("submitBtn").textContent = "申請する";
-          loadRemaining();
-        } else {
-          errorEl.textContent = "エラーが発生しました。もう一度お試しください。";
-          document.getElementById("submitBtn").disabled = false;
-          document.getElementById("submitBtn").textContent = "申請する";
-        }
-      })
-      .catch(() => {
-        errorEl.textContent = "通信エラーが発生しました。";
-        document.getElementById("submitBtn").disabled = false;
-        document.getElementById("submitBtn").textContent = "申請する";
-      });
-  }
-  let isEdit = false;
-
+  /* ===== 申請済み → 編集 ===== */
   function startEdit() {
     fetch(GAS_URL + "?mode=check&email=" + encodeURIComponent(userEmail))
       .then(res => res.json())
       .then(data => {
         if (data.mailSent === "sent") {
-          alert("チケットがすでに発行済みのため編集できません。");
+          alert("チケットがすでに発行済みのため編集できません。\n担当の先生にお問い合わせください。");
           return;
         }
         isEdit = true;
-        document.getElementById("alreadySection").style.display = "none";
-        document.getElementById("formSection").style.display = "block";
+        setStep(2);
+        showSection('formSection');
         loadRemaining();
+      })
+      .catch(() => {
+        alert("通信エラーが発生しました。もう一度お試しください。");
       });
   }
 
+  /* ===== 申請送信 ===== */
   function submitForm() {
     const name = document.getElementById("name").value.trim();
     const count = document.getElementById("count").value;
-    const errorEl = document.getElementById("formError");
 
-    if (!name) { errorEl.textContent = "お名前を入力してください。"; return; }
-    if (!selectedTime) { errorEl.textContent = "時間帯を選択してください。"; return; }
-    errorEl.textContent = "";
+    if (!name) { showError('formError', 'お名前を入力してください。'); return; }
+    if (!selectedTime) { showError('formError', '入場時間帯を選択してください。'); return; }
+    showError('formError', '');
 
-    document.getElementById("submitBtn").disabled = true;
-    document.getElementById("submitBtn").textContent = "送信中...";
+    const btn = document.getElementById("submitBtn");
+    const labelEl = document.getElementById("submitLabel");
+    btn.disabled = true;
+    labelEl.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span> 送信中...';
 
-    // 編集か新規かでURLを変える
     const submitMode = isEdit ? "edit" : "submit";
-
-    fetch(GAS_URL + "?mode=" + submitMode + "&email=" + encodeURIComponent(userEmail) + "&name=" + encodeURIComponent(name) + "&time=" + selectedTime + "&count=" + count)
+    fetch(GAS_URL + "?mode=" + submitMode
+        + "&email=" + encodeURIComponent(userEmail)
+        + "&name=" + encodeURIComponent(name)
+        + "&time=" + selectedTime
+        + "&count=" + count)
       .then(res => res.json())
       .then(data => {
         if (data.status === "ok") {
-          document.getElementById("formSection").style.display = "none";
-          document.getElementById("successSection").style.display = "block";
+          setStep(3);
+          showSection('successSection');
         } else if (data.status === "full") {
-          errorEl.textContent = "申し訳ありません。選択した時間帯が満員になりました。";
-          document.getElementById("submitBtn").disabled = false;
-          document.getElementById("submitBtn").textContent = "申請する";
+          showError('formError', '選択した時間帯が満員になりました。もう一方の時間帯をお試しください。');
+          btn.disabled = false;
+          labelEl.textContent = '申請する';
           loadRemaining();
         } else {
-          errorEl.textContent = "エラーが発生しました。もう一度お試しください。";
-          document.getElementById("submitBtn").disabled = false;
-          document.getElementById("submitBtn").textContent = "申請する";
+          showError('formError', 'エラーが発生しました。もう一度お試しください。');
+          btn.disabled = false;
+          labelEl.textContent = '申請する';
         }
       })
       .catch(() => {
-        errorEl.textContent = "通信エラーが発生しました。";
-        document.getElementById("submitBtn").disabled = false;
-        document.getElementById("submitBtn").textContent = "申請する";
+        showError('formError', '通信エラーが発生しました。インターネット接続を確認してください。');
+        btn.disabled = false;
+        labelEl.textContent = '申請する';
       });
   }
 </script>
