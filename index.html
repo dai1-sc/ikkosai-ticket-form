@@ -189,8 +189,16 @@
   let userEmail = "";
   let selectedTime = "";
 
-  function handleCredential(response) {
-    const payload = JSON.parse(atob(response.credential.split('.')[1]));
+function handleCredential(response) {
+  try {
+    const base64Url = response.credential.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64).split('').map(c =>
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+      ).join('')
+    );
+    const payload = JSON.parse(jsonPayload);
     const email = payload.email;
 
     if (!email.endsWith("@" + ALLOWED_DOMAIN)) {
@@ -204,7 +212,10 @@
     document.getElementById("userInfo").textContent = "ログイン中：" + email;
 
     loadRemaining();
+  } catch(err) {
+    document.getElementById("loginError").textContent = "ログインエラー：" + err.message;
   }
+}
 
   function loadRemaining() {
     fetch(GAS_URL + "?mode=remaining")
