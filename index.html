@@ -778,6 +778,10 @@
   let selectedTime = "";
   let isEdit = false;
 
+  // --- 追加: ポーリング制御 ---
+  let pollingIntervalId = null;
+  const POLL_MS = 5000; // 5秒ごとに残席更新
+
   /* ===== ステップ更新 ===== */
   function setStep(active) {
     [1, 2, 3].forEach(n => {
@@ -798,11 +802,47 @@
     });
   }
 
-  /* ===== セクション切替 ===== */
+  /* ===== セクション切替（フォーム表示時にポーリング開始） ===== */
   function showSection(id) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
+
+    if (id === 'formSection') {
+      startPolling();
+    } else {
+      // フォーム以外のときはポーリングを止める（無駄な通信を避ける）
+      stopPolling();
+    }
   }
+
+  /* ===== ポーリングの開始／停止 ===== */
+  function startPolling() {
+    if (pollingIntervalId) return;
+    // 初回は即時取得して UI を更新
+    loadRemaining();
+    pollingIntervalId = setInterval(() => {
+      loadRemaining();
+    }, POLL_MS);
+  }
+
+  function stopPolling() {
+    if (pollingIntervalId) {
+      clearInterval(pollingIntervalId);
+      pollingIntervalId = null;
+    }
+  }
+
+  // タブの可視性に応じてポーリングを停止/再開
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopPolling();
+    } else {
+      // フォームが表示されているときだけ再開
+      if (document.getElementById('formSection').classList.contains('active')) {
+        startPolling();
+      }
+    }
+  });
 
   /* ===== エラー表示 ===== */
   function showError(id, msg) {
@@ -856,7 +896,8 @@
           } else {
             setStep(2);
             showSection('formSection');
-            loadRemaining();
+            // loadRemaining は startPolling 内で行われるのでここでは startPolling を呼ぶ
+            startPolling();
           }
         })
         .catch(() => {
@@ -869,11 +910,13 @@
 
   /* ===== 残席読み込み ===== */
   function loadRemaining() {
+    // UI を素早く反応させるため読み込み表示
     document.getElementById("remaining-am").textContent = "読み込み中...";
     document.getElementById("remaining-pm").textContent = "読み込み中...";
     fetch(GAS_URL + "?mode=remaining")
       .then(res => res.json())
       .then(data => {
+        // data は { am: <usedCount>, pm: <usedCount> } という想定
         updateOption("am", data.am);
         updateOption("pm", data.pm);
       })
@@ -902,14 +945,38 @@
       opt.setAttribute('tabindex', '-1');
       opt.onclick = null;
       opt.onkeydown = null;
+
+      // もし現在選択中の時間帯が満員になったら選択解除して通知
+      if (selectedTime === time) {
+        selectedTime = "";
+        opt.classList.remove('selected');
+        opt.setAttribute('aria-checked', 'false');
+        showError('formError', '選択していた時間帯が満員になりました。別の時間帯を選んでください。');
+      }
     } else if (remaining <= 50) {
       remEl.textContent = "残り" + remaining + "枚";
       remEl.className = "remaining few";
       fillEl.className = "capacity-fill few";
+      // 再び選択可能にする（満員解除時）
+      if (opt.classList.contains('full')) {
+        opt.classList.remove('full');
+        opt.removeAttribute('aria-disabled');
+        opt.setAttribute('tabindex', '0');
+        // restore click handlers
+        opt.onclick = () => selectTime(time);
+        opt.onkeydown = (e) => { if(e.key==='Enter'||e.key===' ') selectTime(time); };
+      }
     } else {
       remEl.textContent = "残り" + remaining + "枚";
       remEl.className = "remaining ok";
       fillEl.className = "capacity-fill";
+      if (opt.classList.contains('full')) {
+        opt.classList.remove('full');
+        opt.removeAttribute('aria-disabled');
+        opt.setAttribute('tabindex', '0');
+        opt.onclick = () => selectTime(time);
+        opt.onkeydown = (e) => { if(e.key==='Enter'||e.key===' ') selectTime(time); };
+      }
     }
   }
 
@@ -926,6 +993,9 @@
     });
     opt.classList.add("selected");
     opt.setAttribute('aria-checked', 'true');
+
+    // 選択成功したらフォームエラーはクリア
+    showError('formError', '');
   }
 
   /* ===== 申請済み → 編集 ===== */
@@ -940,21 +1010,44 @@
         isEdit = true;
         setStep(2);
         showSection('formSection');
-        loadRemaining();
+        // ポーリング開始は showSection が行う
       })
       .catch(() => {
         alert("通信エラーが発生しました。もう一度お試しください。");
       });
   }
 
-  /* ===== 申請送信 ===== */
-  function submitForm() {
+  /* ===== 申請送信（送信前に最新残席を確認） ===== */
+  async function submitForm() {
     const name = document.getElementById("name").value.trim();
-    const count = document.getElementById("count").value;
+    const count = parseInt(document.getElementById("count").value, 10);
 
     if (!name) { showError('formError', 'お名前を入力してください。'); return; }
     if (!selectedTime) { showError('formError', '入場時間帯を選択してください。'); return; }
     showError('formError', '');
+
+    // 送信直前に最新の残席をチェック（競合回避）
+    try {
+      const res = await fetch(GAS_URL + "?mode=remaining");
+      const data = await res.json();
+      const used = selectedTime === 'am' ? data.am : data.pm;
+      const remaining = CAPACITY - used;
+
+      if (remaining <= 0) {
+        showError('formError', '選択した時間帯が満員になりました。別の時間帯を選択してください。');
+        // UI 更新
+        loadRemaining();
+        return;
+      }
+      if (remaining < count) {
+        showError('formError', '選択した時間帯の残り枚数が不足しています。枚数を減らすか、もう一方の時間帯を選択してください。');
+        loadRemaining();
+        return;
+      }
+    } catch (err) {
+      showError('formError', '通信エラーが発生しました。インターネット接続を確認してください。');
+      return;
+    }
 
     const btn = document.getElementById("submitBtn");
     const labelEl = document.getElementById("submitLabel");
@@ -970,6 +1063,8 @@
       .then(res => res.json())
       .then(data => {
         if (data.status === "ok") {
+          // 送信成功時はポーリングを止めても良い（完了画面へ）
+          stopPolling();
           setStep(3);
           showSection('successSection');
         } else if (data.status === "full") {
