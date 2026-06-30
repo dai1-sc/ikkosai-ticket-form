@@ -719,7 +719,7 @@
               <div class="capacity-bar" aria-hidden="true">
                 <div class="capacity-fill" id="fill-am" style="width:0%"></div>
               </div>
-              <div class="remaining" id="remaining-am" aria-live="polite">読み込み中...</div>
+              <div class="remaining" id="remaining-am" aria-live="polite">—</div>
             </div>
             <div class="time-option" id="opt-pm" role="radio" aria-checked="false" tabindex="0"
                  onclick="selectTime('pm')" onkeydown="if(event.key==='Enter'||event.key===' ')selectTime('pm')">
@@ -727,7 +727,7 @@
               <div class="capacity-bar" aria-hidden="true">
                 <div class="capacity-fill" id="fill-pm" style="width:0%"></div>
               </div>
-              <div class="remaining" id="remaining-pm" aria-live="polite">読み込み中...</div>
+              <div class="remaining" id="remaining-pm" aria-live="polite">—</div>
             </div>
           </div>
         </fieldset>
@@ -778,7 +778,7 @@
   let selectedTime = "";
   let isEdit = false;
 
-  // --- 追加: ポーリング制御 ---
+  // --- ポーリング制御 ---
   let pollingIntervalId = null;
   const POLL_MS = 5000; // 5秒ごとに残席更新
 
@@ -810,7 +810,6 @@
     if (id === 'formSection') {
       startPolling();
     } else {
-      // フォーム以外のときはポーリングを止める（無駄な通信を避ける）
       stopPolling();
     }
   }
@@ -818,7 +817,7 @@
   /* ===== ポーリングの開始／停止 ===== */
   function startPolling() {
     if (pollingIntervalId) return;
-    // 初回は即時取得して UI を更新
+    // 初回は即時取得して UI を更新（ただし「読み込み中」の表示はしない）
     loadRemaining();
     pollingIntervalId = setInterval(() => {
       loadRemaining();
@@ -837,7 +836,6 @@
     if (document.hidden) {
       stopPolling();
     } else {
-      // フォームが表示されているときだけ再開
       if (document.getElementById('formSection').classList.contains('active')) {
         startPolling();
       }
@@ -896,8 +894,7 @@
           } else {
             setStep(2);
             showSection('formSection');
-            // loadRemaining は startPolling 内で行われるのでここでは startPolling を呼ぶ
-            startPolling();
+            // startPolling() は showSection 内で呼ばれる
           }
         })
         .catch(() => {
@@ -908,21 +905,18 @@
     }
   }
 
-  /* ===== 残席読み込み ===== */
+  /* ===== 残席読み込み（表示はそのまま維持し、成功時のみ上書き） ===== */
   function loadRemaining() {
-    // UI を素早く反応させるため読み込み表示
-    document.getElementById("remaining-am").textContent = "読み込み中...";
-    document.getElementById("remaining-pm").textContent = "読み込み中...";
     fetch(GAS_URL + "?mode=remaining")
       .then(res => res.json())
       .then(data => {
-        // data は { am: <usedCount>, pm: <usedCount> } という想定
+        // data は { am: <usedCount>, pm: <usedCount> } の想定
         updateOption("am", data.am);
         updateOption("pm", data.pm);
       })
-      .catch(() => {
-        document.getElementById("remaining-am").textContent = "取得失敗";
-        document.getElementById("remaining-pm").textContent = "取得失敗";
+      .catch((err) => {
+        // エラー時は既存表示を維持（ユーザーが「読み込み中」を見ることはない）
+        console.warn("remaining fetch failed:", err);
       });
   }
 
@@ -962,7 +956,6 @@
         opt.classList.remove('full');
         opt.removeAttribute('aria-disabled');
         opt.setAttribute('tabindex', '0');
-        // restore click handlers
         opt.onclick = () => selectTime(time);
         opt.onkeydown = (e) => { if(e.key==='Enter'||e.key===' ') selectTime(time); };
       }
@@ -1010,7 +1003,6 @@
         isEdit = true;
         setStep(2);
         showSection('formSection');
-        // ポーリング開始は showSection が行う
       })
       .catch(() => {
         alert("通信エラーが発生しました。もう一度お試しください。");
@@ -1063,7 +1055,6 @@
       .then(res => res.json())
       .then(data => {
         if (data.status === "ok") {
-          // 送信成功時はポーリングを止めても良い（完了画面へ）
           stopPolling();
           setStep(3);
           showSection('successSection');
