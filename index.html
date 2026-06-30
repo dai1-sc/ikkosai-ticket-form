@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>一高祭 入場チケット申請</title>
-  <link rel="icon" href="logo_sc.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -61,7 +60,40 @@
       max-width: 520px;
       width: 100%;
       overflow: hidden;
+      position: relative;
     }
+
+    /* ===== ローディングオーバーレイ ===== */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.36);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 60;
+    }
+    .loading-overlay.show { display: flex; }
+    .loading-panel {
+      background: rgba(255,255,255,0.98);
+      padding: 18px 20px;
+      border-radius: 12px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      min-width: 220px;
+    }
+    .loader {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 4px solid rgba(0,0,0,0.08);
+      border-top-color: var(--navy);
+      animation: spin 0.9s linear infinite;
+      flex-shrink: 0;
+    }
+    .loading-text { font-size: 14px; color: var(--gray-800); font-weight: 700; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ===== ヘッダー ===== */
     .card-header {
@@ -589,12 +621,21 @@
       .card-header h1 { font-size: 16px; }
       .step-label { display: none; }
       .step:not(:last-child)::after { left: 40px; width: calc(100% - 40px); }
+      .loading-panel { min-width: 180px; padding: 12px 14px; }
     }
   </style>
 </head>
 <body>
 
 <div class="card" role="main">
+  <!-- ローディングオーバーレイ -->
+  <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
+    <div class="loading-panel" role="status" aria-live="polite">
+      <div class="loader" aria-hidden="true"></div>
+      <div class="loading-text" id="loadingText">読み込み中...</div>
+    </div>
+  </div>
+
   <!-- ヘッダー -->
   <div class="card-header">
     <div class="header-badge">🎫 TICKET APPLICATION</div>
@@ -773,15 +814,35 @@
 <script>
   const GAS_URL = "https://script.google.com/macros/s/AKfycbxdMLfj6qHITIEInB52DC1DJqojKlb-dWb43AoqMchlkCFyuqRpZtqB_0u6vcFydGw/exec";
   const ALLOWED_DOMAIN = "g.bears.ed.jp";
-  const CAPACITY = 1000;
+  const CAPACITY = 500;
 
   let userEmail = "";
   let selectedTime = "";
   let isEdit = false;
 
-  // --- ポーリング制御 ---
+  // ポーリング制御
   let pollingIntervalId = null;
-  const POLL_MS = 3000; // 3秒ごとに残席更新
+  const POLL_MS = 5000; // 5秒ごとに残席更新
+
+  // ローディング重複管理（ネストされた処理でも適切に表示/非表示）
+  let loadingCount = 0;
+  function showLoading(msg = "読み込み中...") {
+    loadingCount++;
+    const ov = document.getElementById('loadingOverlay');
+    const txt = document.getElementById('loadingText');
+    txt.textContent = msg;
+    ov.classList.add('show');
+    ov.setAttribute('aria-hidden', 'false');
+  }
+  function hideLoading(force = false) {
+    if (force) loadingCount = 0;
+    else loadingCount = Math.max(0, loadingCount - 1);
+    if (loadingCount === 0) {
+      const ov = document.getElementById('loadingOverlay');
+      ov.classList.remove('show');
+      ov.setAttribute('aria-hidden', 'true');
+    }
+  }
 
   /* ===== ステップ更新 ===== */
   function setStep(active) {
@@ -809,6 +870,8 @@
     document.getElementById(id).classList.add('active');
 
     if (id === 'formSection') {
+      // 初回読み込みが終わるまでローディングを表示
+      showLoading('残席情報を取得しています...');
       startPolling();
     } else {
       stopPolling();
@@ -818,7 +881,7 @@
   /* ===== ポーリングの開始／停止 ===== */
   function startPolling() {
     if (pollingIntervalId) return;
-    // 初回は即時取得して UI を更新（ただし「読み込み中」の表示はしない）
+    // 初回は即時取得して UI を更新（loadRemaining 内で hideLoading する）
     loadRemaining();
     pollingIntervalId = setInterval(() => {
       loadRemaining();
@@ -857,6 +920,8 @@
 
   /* ===== Google ログイン ===== */
   function handleCredential(response) {
+    // ログイン開始時にローディングを出す（処理／サーバ確認をまたぐ）
+    showLoading('アカウント確認中...');
     try {
       const base64Url = response.credential.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -869,6 +934,7 @@
       const email = payload.email;
 
       if (!email.endsWith("@" + ALLOWED_DOMAIN)) {
+        hideLoading();
         showError('loginError', '学校のアカウント（@g.bears.ed.jp）でログインしてください。個人アカウントは使用できません。');
         return;
       }
@@ -876,6 +942,7 @@
       userEmail = email;
       document.getElementById("userEmail").textContent = "ログイン中：" + email;
 
+      // サーバーで既存申請チェック（完了するまでローディングを表示）
       fetch(GAS_URL + "?mode=check&email=" + encodeURIComponent(email))
         .then(res => res.json())
         .then(data => {
@@ -891,33 +958,40 @@
               statusEl.innerHTML = '<span class="ticket-status pending">⏳ 準備中</span>';
             }
             setStep(2);
+            hideLoading();
             showSection('alreadySection');
           } else {
             setStep(2);
+            // フォーム表示時、showSection がローディングと読み込みを行うためここでは showSection を呼ぶだけ
             showSection('formSection');
-            // startPolling() は showSection 内で呼ばれる
+            // hideLoading は loadRemaining 側で行う（初回fetchが終わってから）
           }
         })
         .catch(() => {
+          hideLoading();
           showError('loginError', '通信エラーが発生しました。ページを再読み込みしてお試しください。');
         });
     } catch (err) {
+      hideLoading();
       showError('loginError', 'ログインエラー：' + err.message);
     }
   }
 
   /* ===== 残席読み込み（表示はそのまま維持し、成功時のみ上書き） ===== */
   function loadRemaining() {
-    fetch(GAS_URL + "?mode=remaining")
+    return fetch(GAS_URL + "?mode=remaining")
       .then(res => res.json())
       .then(data => {
         // data は { am: <usedCount>, pm: <usedCount> } の想定
         updateOption("am", data.am);
         updateOption("pm", data.pm);
+        // 初回読み込み後はローディングを消す（複数の showLoading を考慮）
+        hideLoading();
       })
       .catch((err) => {
-        // エラー時は既存表示を維持（ユーザーが「読み込み中」を見ることはない）
+        // エラー時は既存表示を維持、ローディングは解除してユーザーを戻す
         console.warn("remaining fetch failed:", err);
+        hideLoading();
       });
   }
 
@@ -935,11 +1009,13 @@
       remEl.textContent = "満員";
       remEl.className = "remaining none";
       fillEl.className = "capacity-fill none";
-      opt.classList.add("full");
-      opt.setAttribute('aria-disabled', 'true');
-      opt.setAttribute('tabindex', '-1');
-      opt.onclick = null;
-      opt.onkeydown = null;
+      if (!opt.classList.contains('full')) {
+        opt.classList.add("full");
+        opt.setAttribute('aria-disabled', 'true');
+        opt.setAttribute('tabindex', '-1');
+        opt.onclick = null;
+        opt.onkeydown = null;
+      }
 
       // もし現在選択中の時間帯が満員になったら選択解除して通知
       if (selectedTime === time) {
@@ -994,9 +1070,11 @@
 
   /* ===== 申請済み → 編集 ===== */
   function startEdit() {
+    showLoading('申請情報を確認しています...');
     fetch(GAS_URL + "?mode=check&email=" + encodeURIComponent(userEmail))
       .then(res => res.json())
       .then(data => {
+        hideLoading();
         if (data.mailSent === "sent") {
           alert("チケットがすでに発行済みのため編集できません。\n担当の先生にお問い合わせください。");
           return;
@@ -1006,18 +1084,30 @@
         showSection('formSection');
       })
       .catch(() => {
+        hideLoading();
         alert("通信エラーが発生しました。もう一度お試しください。");
       });
   }
 
+  // 申請ボタンの多重押下を防ぐためのフラグ
+  let isSubmitting = false;
+
   /* ===== 申請送信（送信前に最新残席を確認） ===== */
   async function submitForm() {
+    if (isSubmitting) return; // すでに送信中なら無視
     const name = document.getElementById("name").value.trim();
     const count = parseInt(document.getElementById("count").value, 10);
 
     if (!name) { showError('formError', 'お名前を入力してください。'); return; }
     if (!selectedTime) { showError('formError', '入場時間帯を選択してください。'); return; }
     showError('formError', '');
+
+    // 即座にボタンを無効化して多重クリックを防止
+    const btn = document.getElementById("submitBtn");
+    const labelEl = document.getElementById("submitLabel");
+    isSubmitting = true;
+    btn.disabled = true;
+    labelEl.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span> 送信中...';
 
     // 送信直前に最新の残席をチェック（競合回避）
     try {
@@ -1029,23 +1119,27 @@
       if (remaining <= 0) {
         showError('formError', '選択した時間帯が満員になりました。別の時間帯を選択してください。');
         // UI 更新
-        loadRemaining();
+        await loadRemaining();
+        isSubmitting = false;
+        btn.disabled = false;
+        labelEl.textContent = '申請する';
         return;
       }
       if (remaining < count) {
         showError('formError', '選択した時間帯の残り枚数が不足しています。枚数を減らすか、もう一方の時間帯を選択してください。');
-        loadRemaining();
+        await loadRemaining();
+        isSubmitting = false;
+        btn.disabled = false;
+        labelEl.textContent = '申請する';
         return;
       }
     } catch (err) {
       showError('formError', '通信エラーが発生しました。インターネット接続を確認してください。');
+      isSubmitting = false;
+      btn.disabled = false;
+      labelEl.textContent = '申請する';
       return;
     }
-
-    const btn = document.getElementById("submitBtn");
-    const labelEl = document.getElementById("submitLabel");
-    btn.disabled = true;
-    labelEl.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span> 送信中...';
 
     const submitMode = isEdit ? "edit" : "submit";
     fetch(GAS_URL + "?mode=" + submitMode
@@ -1056,22 +1150,26 @@
       .then(res => res.json())
       .then(data => {
         if (data.status === "ok") {
+          // 送信成功時はポーリングを止めても良い（完了画面へ）
           stopPolling();
           setStep(3);
           showSection('successSection');
         } else if (data.status === "full") {
           showError('formError', '選択した時間帯が満員になりました。もう一方の時間帯をお試しください。');
+          loadRemaining();
+          isSubmitting = false;
           btn.disabled = false;
           labelEl.textContent = '申請する';
-          loadRemaining();
         } else {
           showError('formError', 'エラーが発生しました。もう一度お試しください。');
+          isSubmitting = false;
           btn.disabled = false;
           labelEl.textContent = '申請する';
         }
       })
       .catch(() => {
         showError('formError', '通信エラーが発生しました。インターネット接続を確認してください。');
+        isSubmitting = false;
         btn.disabled = false;
         labelEl.textContent = '申請する';
       });
