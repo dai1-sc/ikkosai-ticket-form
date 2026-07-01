@@ -146,7 +146,13 @@
       margin-top: 6px;
       position: relative;
     }
-
+.festival-logo{
+  position:absolute;
+  top:22px;
+  right:28px;
+  width:210px;
+  z-index:2;
+}
     /* ===== ステップインジケーター ===== */
     .steps {
       display: flex;
@@ -638,11 +644,13 @@
   </div>
 
   <!-- ヘッダー -->
-  <div class="card-header">
-    <div class="header-badge">🎫 TICKET APPLICATION</div>
-    <h1>一高祭・文化部門<br>入場チケット申請</h1>
-    <p>学校アカウントでログインして申請してください</p>
-  </div>
+<div class="card-header">
+  <div class="header-badge">🎫 TICKET APPLICATION</div>
+
+  <img src="ikko-sai.png" class="festival-logo" alt="一高祭">
+
+  <p>学校アカウントでログインして申請してください</p>
+</div>
 
   <!-- ステップインジケーター -->
   <div class="steps" role="navigation" aria-label="申請ステップ">
