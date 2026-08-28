@@ -328,6 +328,38 @@
       box-shadow: 0 0 0 2px rgba(26,54,93,0.15);
     }
 
+    /* 利用規約同意チェックボックス */
+    .terms-group {
+      margin-bottom: 20px;
+      padding: 12px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-300);
+      border-radius: var(--radius-sm);
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--gray-800);
+      cursor: pointer;
+      user-select: none;
+    }
+    .checkbox-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--navy);
+      cursor: pointer;
+    }
+    .terms-link {
+      color: var(--navy);
+      font-weight: 700;
+      text-decoration: underline;
+    }
+    .terms-link:hover {
+      color: var(--navy-mid);
+    }
+
     /* ===== 時間帯選択カード ===== */
     .time-options {
       display: grid;
@@ -757,7 +789,15 @@
         </select>
       </div>
 
-      <button class="btn btn-primary" id="submitBtn" onclick="submitForm()">
+      <!-- 利用規約同意領域 -->
+      <div class="terms-group">
+        <label class="checkbox-label" for="termsCheckbox">
+          <input type="checkbox" id="termsCheckbox" onchange="toggleSubmitBtn()">
+          <span><a href="https://www.dai1-sc.online/ticket-form/terms" target="_blank" class="terms-link">利用規約</a>に同意します</span>
+        </label>
+      </div>
+
+      <button class="btn btn-primary" id="submitBtn" onclick="submitForm()" disabled>
         <span id="submitLabel">申請する</span>
       </button>
     </div>
@@ -810,6 +850,13 @@
       ov.classList.remove('show');
       ov.setAttribute('aria-hidden', 'true');
     }
+  }
+
+  /* ===== 利用規約チェックボックスによる送信ボタン有効化/無効化 ===== */
+  function toggleSubmitBtn() {
+    const chk = document.getElementById("termsCheckbox");
+    const btn = document.getElementById("submitBtn");
+    btn.disabled = !chk.checked;
   }
 
   /* ===== ステップ更新 ===== */
@@ -1065,9 +1112,11 @@
     if (isSubmitting) return; // すでに送信中なら無視
     const name = document.getElementById("name").value.trim();
     const count = parseInt(document.getElementById("count").value, 10);
+    const termsChecked = document.getElementById("termsCheckbox").checked;
 
     if (!name) { showError('formError', 'お名前を入力してください。'); return; }
     if (!selectedTime) { showError('formError', '入場時間帯を選択してください。'); return; }
+    if (!termsChecked) { showError('formError', '利用規約への同意が必要です。'); return; }
     showError('formError', '');
 
     // 即座にボタンを無効化して多重クリックを防止
