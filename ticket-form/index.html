@@ -616,6 +616,118 @@
       line-height: 1.5;
     }
 
+    /* --- ポップアップスタイル --- */
+    .popup-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.45);
+      z-index: 99999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      box-sizing: border-box;
+      opacity: 0;
+      animation: fadeIn 0.25s forwards;
+    }
+
+    .popup-card {
+      position: relative;
+      background: #ffffff;
+      width: 100%;
+      max-width: 360px;
+      border-radius: 12px;
+      padding: 24px 20px 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      box-sizing: border-box;
+      color: var(--gray-800);
+    }
+
+    .popup-close-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: #888888;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 4px;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .popup-close-btn:hover {
+      background-color: #f0f0f0;
+      color: #333333;
+    }
+
+    .popup-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0 0 16px 0;
+      text-align: center;
+      padding: 0 20px;
+      line-height: 1.4;
+      color: var(--navy);
+    }
+
+    .popup-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #444444;
+      margin-bottom: 16px;
+    }
+
+    .popup-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #666666;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .popup-list {
+      margin: 0 0 16px 0;
+      padding-left: 18px;
+      font-size: 13px;
+      color: #444444;
+      line-height: 1.6;
+    }
+
+    .popup-warning-box {
+      border-top: 1px dashed #e0e0e0;
+      padding-top: 12px;
+      margin-bottom: 16px;
+    }
+
+    .popup-warning-box p {
+      margin: 0;
+      font-size: 12px;
+      color: #d9534f;
+      line-height: 1.5;
+    }
+
+    .popup-signature {
+      text-align: right;
+      font-size: 12px;
+      color: #666666;
+      font-weight: 600;
+      border-top: 1px solid #f0f0f0;
+      padding-top: 10px;
+      margin: 0;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
     /* ===== レスポンシブ ===== */
     @media (max-width: 480px) {
       body { padding: 12px; }
@@ -630,6 +742,38 @@
   </style>
 </head>
 <body>
+
+<!-- テスト運用案内ポップアップ -->
+<div class="popup-overlay" id="testPopup">
+  <div class="popup-card">
+    <button class="popup-close-btn" onclick="closePopup()" aria-label="閉じる">×</button>
+    
+    <h2 class="popup-title">電子チケット 発行テスト運用</h2>
+
+    <p class="popup-text">
+      2年9組の皆さん。<br>電子チケット発行のテスト運用にご協力いただき、ありがとうございます。
+    </p>
+
+    <div class="popup-section-title">テストの目的</div>
+    <ul class="popup-list">
+      <li>チケット発行システムが正常に動作するかの確認</li>
+      <li>発行および送付にかかる時間の調査</li>
+      <li>チェックインシステムの動作確認</li>
+    </ul>
+
+    <div class="popup-warning-box">
+      <div class="popup-section-title" style="color: #d9534f;">注意事項</div>
+      <p>
+        ・本チケットは当日の入場には使用できません。<br>
+        ・テスト終了後、本チケットは自動的に無効化されます。
+      </p>
+    </div>
+
+    <div class="popup-signature">
+      一高祭・文化部門 実行委員会 生徒会総務委員長
+    </div>
+  </div>
+</div>
 
 <div class="card" role="main">
   <!-- ローディングオーバーレイ -->
@@ -820,6 +964,26 @@
 </div><!-- /card -->
 
 <script>
+  // ポップアップを閉じる関数
+  function closePopup() {
+    const popup = document.getElementById("testPopup");
+    if (popup) {
+      popup.style.display = "none";
+    }
+  }
+
+  // 背景クリックで閉じる処理
+  document.addEventListener("DOMContentLoaded", function() {
+    const popup = document.getElementById("testPopup");
+    if (popup) {
+      popup.addEventListener("click", function(e) {
+        if (e.target === popup) {
+          closePopup();
+        }
+      });
+    }
+  });
+
   const GAS_URL = "https://script.google.com/macros/s/AKfycbxdMLfj6qHITIEInB52DC1DJqojKlb-dWb43AoqMchlkCFyuqRpZtqB_0u6vcFydGw/exec";
   const ALLOWED_DOMAIN = "g.bears.ed.jp";
   const CAPACITY = 1000;
