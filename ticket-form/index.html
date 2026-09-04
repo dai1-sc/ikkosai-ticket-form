@@ -1342,6 +1342,11 @@
           isSubmitting = false;
           btn.disabled = false;
           labelEl.textContent = '申請する';
+        } else if (data.status === "busy") {
+          showError('formError', '現在アクセスが集中しています。恐れ入りますが、もう一度「申請する」ボタンを押してください。');
+          isSubmitting = false;
+          btn.disabled = false;
+          labelEl.textContent = '申請する';
         } else {
           showError('formError', 'エラーが発生しました。もう一度お試しください。');
           isSubmitting = false;
