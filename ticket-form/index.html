@@ -251,6 +251,115 @@
     }
     .info-box .icon { flex-shrink: 0; color: var(--navy); }
 
+    /* ===== 待機列画面 ===== */
+    .waiting-wrap {
+      text-align: center;
+      padding: 8px 0 4px;
+    }
+
+    .waiting-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-300);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+
+    .waiting-wrap h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gray-800);
+      margin-bottom: 8px;
+    }
+
+    .waiting-wrap > p {
+      font-size: 13px;
+      color: var(--gray-600);
+      line-height: 1.6;
+    }
+
+    .waiting-position-card {
+      margin: 22px 0 16px;
+      padding: 20px 16px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-300);
+      border-radius: var(--radius-md);
+    }
+
+    .waiting-position-label {
+      font-size: 12px;
+      color: var(--gray-600);
+      margin-bottom: 4px;
+    }
+
+    .waiting-position {
+      font-size: 34px;
+      line-height: 1.2;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .waiting-position small {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .waiting-time {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--gray-600);
+    }
+
+    .waiting-time strong {
+      color: var(--gray-800);
+    }
+
+    .waiting-progress {
+      height: 5px;
+      margin-top: 20px;
+      background: var(--gray-200);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .waiting-progress::before {
+      content: '';
+      display: block;
+      width: 35%;
+      height: 100%;
+      background: var(--navy);
+      border-radius: 3px;
+      animation: waitingProgress 1.6s ease-in-out infinite alternate;
+    }
+
+    @keyframes waitingProgress {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(285%); }
+    }
+
+    .waiting-note {
+      margin-top: 18px;
+      padding: 12px;
+      text-align: left;
+      background: var(--red-bg);
+      border: 1px solid #feb2b2;
+      border-radius: var(--radius-sm);
+      color: var(--red);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .waiting-status {
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--gray-600);
+    }
+
     /* ===== ユーザー情報バー ===== */
     .user-bar {
       display: flex;
@@ -736,6 +845,8 @@
       .steps { padding: 12px 20px; }
       .card-header h1 { font-size: 18px; }
       .festival-logo { width: 120px; top: 20px; right: 16px; }
+      .steps { gap: 2px; }
+      .step { min-width: 0; }
       .step-label { display: none; }
       .step:not(:last-child)::after { left: 32px; width: calc(100% - 32px); }
     }
@@ -771,10 +882,14 @@
     </div>
     <div class="step" id="step2">
       <div class="step-icon" aria-hidden="true">2</div>
-      <span class="step-label">情報入力</span>
+      <span class="step-label">待機列</span>
     </div>
     <div class="step" id="step3">
       <div class="step-icon" aria-hidden="true">3</div>
+      <span class="step-label">情報入力</span>
+    </div>
+    <div class="step" id="step4">
+      <div class="step-icon" aria-hidden="true">4</div>
       <span class="step-label">完了</span>
     </div>
   </div>
@@ -802,12 +917,40 @@
         <span>個人のGoogleアカウントではログインできません。学校から配付されたアカウントをお使いください。</span>
       </div>
       <div class="error-msg" id="loginError" role="alert" aria-live="assertive">
-        <span class="icon" aria-hidden="true">⚠️</span>
         <span id="loginErrorText"></span>
       </div>
     </div>
 
-    <!-- ② 申請済み画面 -->
+    <!-- ② 待機列画面 -->
+    <div class="section" id="waitingSection" role="region" aria-label="待機列">
+      <div class="waiting-wrap">
+        <h2>ただいま待機列でお待ちください</h2>
+        <p>
+          現在、申請が集中しているため、順番にご案内しています。<br>
+          順番が来ると自動的に申請画面へ切り替わります。
+        </p>
+
+        <div class="waiting-position-card">
+          <div class="waiting-position-label">あなたの前にいる人数</div>
+          <div class="waiting-position" id="waitingPosition">—<small>人</small></div>
+          <div class="waiting-time">
+            予想待機時間：<strong id="waitingTime">—</strong>
+          </div>
+          <div class="waiting-progress" aria-hidden="true"></div>
+        </div>
+
+        <div class="waiting-note" role="note">
+          <strong>⚠ ページをリロードしないでください</strong><br>
+          ページをリロードすると、現在の待機列の情報が失われ、<strong>再度最後尾から並び直し</strong>になります。
+        </div>
+
+        <div class="waiting-status" id="waitingStatus" aria-live="polite">
+          順番を確認しています...
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 申請済み画面 -->
     <div class="section" id="alreadySection" role="region" aria-label="申請済み確認">
       <div class="already-header">
         <div class="already-icon" aria-hidden="true">✓</div>
@@ -842,7 +985,7 @@
       </button>
     </div>
 
-    <!-- ③ フォーム画面 -->
+    <!-- ④ フォーム画面 -->
     <div class="section" id="formSection" role="region" aria-label="申請フォーム">
       <div class="user-bar" id="userInfo" aria-label="ログイン中のアカウント">
         <span class="icon" aria-hidden="true">👤</span>
@@ -917,7 +1060,7 @@
       </button>
     </div>
 
-    <!-- ④ 完了画面 -->
+    <!-- ⑤ 完了画面 -->
     <div class="section" id="successSection" role="region" aria-label="申請完了">
       <div class="success-wrap">
         <div class="success-icon" aria-hidden="true">✓</div>
@@ -963,9 +1106,14 @@
   let selectedTime = "";
   let isEdit = false;
 
+  // セッション（待機列）管理
+  let sessionId = "";
+  let waitingPollId = null;
+  const WAITING_POLL_MS = 3000; // 待機列の確認間隔
+
   // ポーリング制御
   let pollingIntervalId = null;
-  const POLL_MS = 3000; // 5秒ごとに残席更新
+  const POLL_MS = 3000; // 残席更新間隔
 
   // ローディング重複管理（ネストされた処理でも適切に表示/非表示）
   let loadingCount = 0;
@@ -996,7 +1144,7 @@
 
   /* ===== ステップ更新 ===== */
   function setStep(active) {
-    [1, 2, 3].forEach(n => {
+    [1, 2, 3, 4].forEach(n => {
       const el = document.getElementById('step' + n);
       el.classList.remove('active', 'done');
       el.removeAttribute('aria-current');
@@ -1049,9 +1197,13 @@
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       stopPolling();
+      // 待機列はページを開いたままなら維持する
     } else {
       if (document.getElementById('formSection').classList.contains('active')) {
         startPolling();
+      } else if (document.getElementById('waitingSection').classList.contains('active')) {
+        checkWaitingStatus();
+        if (!waitingPollId) startWaitingPolling();
       }
     }
   });
@@ -1070,8 +1222,9 @@
 
   /* ===== Google ログイン ===== */
   function handleCredential(response) {
-    // ログイン開始時にローディングを出す（処理／サーバ確認をまたぐ）
+    // ログイン開始時にローディングを出す
     showLoading('アカウント確認中...');
+
     try {
       const base64Url = response.credential.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -1092,41 +1245,173 @@
       userEmail = email;
       document.getElementById("userEmail").textContent = "ログイン中：" + email;
 
-      // サーバーで既存申請チェック（完了するまでローディングを表示）
+      // まず既存申請の有無を確認
       fetch(GAS_URL + "?mode=check&email=" + encodeURIComponent(email))
         .then(res => res.json())
         .then(data => {
           if (data.exists) {
-            // 申請済み
+            // 申請済みの場合は待機列に入らない
             const timeLabel = data.time === "am" ? "午前の部" : "午後の部";
             document.getElementById("alreadyTime").textContent = timeLabel;
             document.getElementById("alreadyCount").textContent = data.count + "枚";
             const statusEl = document.getElementById("alreadyStatus");
+
             if (data.mailSent === "sent") {
               statusEl.innerHTML = '<span class="ticket-status issued">発行済み</span>';
             } else {
               statusEl.innerHTML = '<span class="ticket-status pending">準備中</span>';
             }
-            setStep(2);
+
+            setStep(3);
             hideLoading();
             showSection('alreadySection');
-          } else {
-            setStep(2);
-            // フォーム表示時、showSection がローディングと読み込みを行うためここでは showSection を呼ぶだけ
-            showSection('formSection');
-            // hideLoading は loadRemaining 側で行う（初回fetchが終わってから）
+            return;
           }
+
+          // 未申請ならセッションを作成し、空きがあればフォームへ、
+          // 5人埋まっていれば待機列へ案内する
+          startApplicationSession();
         })
         .catch(() => {
           hideLoading();
           showError('loginError', '通信エラーが発生しました。ページを再読み込みしてお試しください。');
         });
+
     } catch (err) {
       hideLoading();
       showError('loginError', 'ログインエラー：' + err.message);
     }
   }
 
+  /* ===== 申請セッション作成 ===== */
+  function startApplicationSession() {
+    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+      hideLoading();
+      showError('loginError', 'セッション管理に接続できません。申請ページをGASから開いてください。');
+      return;
+    }
+
+    google.script.run
+      .withSuccessHandler(handleSessionCreated)
+      .withFailureHandler(function(err) {
+        hideLoading();
+        console.error('getOrCreateSession failed:', err);
+        showError('loginError', '申請状況の確認中にエラーが発生しました。もう一度お試しください。');
+      })
+      .getOrCreateSession(userEmail);
+  }
+
+  /* ===== セッション作成結果 ===== */
+  function handleSessionCreated(data) {
+    hideLoading();
+
+    if (!data) {
+      showError('loginError', '申請状況を確認できませんでした。もう一度お試しください。');
+      return;
+    }
+
+    if (data.error) {
+      showError('loginError', data.error);
+      return;
+    }
+
+    sessionId = data.sessionId || "";
+
+    if (data.canProceed) {
+      // すぐに申請可能
+      setStep(3);
+      showSection('formSection');
+      return;
+    }
+
+    // 待機列へ
+    setStep(2);
+    updateWaitingDisplay(data.position, data.estimatedWaitTime);
+    showSection('waitingSection');
+    startWaitingPolling();
+  }
+
+  /* ===== 待機列ポーリング ===== */
+  function startWaitingPolling() {
+    stopWaitingPolling();
+
+    checkWaitingStatus();
+    waitingPollId = setInterval(checkWaitingStatus, WAITING_POLL_MS);
+  }
+
+  function stopWaitingPolling() {
+    if (waitingPollId) {
+      clearInterval(waitingPollId);
+      waitingPollId = null;
+    }
+  }
+
+  function checkWaitingStatus() {
+    if (!sessionId) return;
+
+    google.script.run
+      .withSuccessHandler(function(data) {
+        if (!data) return;
+
+        if (data.error) {
+          stopWaitingPolling();
+          showError('loginError', data.error);
+          setStep(1);
+          showSection('loginSection');
+          return;
+        }
+
+        if (data.canProceed) {
+          stopWaitingPolling();
+          document.getElementById('waitingStatus').textContent =
+            '順番になりました。申請画面へ移動します...';
+
+          // 少しだけ案内を見せてからフォームへ
+          setTimeout(function() {
+            setStep(3);
+            showSection('formSection');
+          }, 500);
+          return;
+        }
+
+        updateWaitingDisplay(data.position, data.estimatedWaitTime);
+      })
+      .withFailureHandler(function(err) {
+        console.warn('checkSessionStatus failed:', err);
+        document.getElementById('waitingStatus').textContent =
+          '接続を確認しています...';
+      })
+      .checkSessionStatus(sessionId);
+  }
+
+  function updateWaitingDisplay(position, estimatedWaitTime) {
+    const positionEl = document.getElementById('waitingPosition');
+    const timeEl = document.getElementById('waitingTime');
+    const statusEl = document.getElementById('waitingStatus');
+
+    const pos = Number(position) || 0;
+    const wait = Number(estimatedWaitTime) || 0;
+
+    // 「前にいる人数」なので、自分自身を含めない表示にする
+    const ahead = Math.max(0, pos - 1);
+
+    positionEl.innerHTML = ahead + '<small>人</small>';
+
+    if (wait > 0) {
+      timeEl.textContent = '約' + wait + '分';
+    } else {
+      timeEl.textContent = 'まもなくご案内';
+    }
+
+    if (ahead === 0) {
+      statusEl.textContent = 'まもなく申請画面へご案内します...';
+    } else {
+      statusEl.textContent = '自動的に順番を確認しています（約3秒ごと）';
+    }
+  }
+
+  // 待機中にタブを離れても、ページが開いている限り確認を継続する。
+  // ただしページをリロードするとセッションを引き継がないため、再度並び直しになる。
   /* ===== 残席読み込み（表示はそのまま維持し、成功時のみ上書き） ===== */
   function loadRemaining() {
     return fetch(GAS_URL + "?mode=remaining")
@@ -1230,7 +1515,7 @@
           return;
         }
         isEdit = true;
-        setStep(2);
+        setStep(3);
         showSection('formSection');
       })
       .catch(() => {
@@ -1304,7 +1589,8 @@
         if (data.status === "ok") {
           // 送信成功時はポーリングを止めても良い（完了画面へ）
           stopPolling();
-          setStep(3);
+          stopWaitingPolling();
+          setStep(4);
           showSection('successSection');
         } else if (data.status === "full") {
           showError('formError', '選択した時間帯が満員になりました。もう一方の時間帯をお試しください。');
