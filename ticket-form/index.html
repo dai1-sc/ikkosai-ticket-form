@@ -1588,8 +1588,8 @@ function checkWaitingStatus() {
         + "&email=" + encodeURIComponent(userEmail)
         + "&name=" + encodeURIComponent(name)
         + "&time=" + selectedTime
-        + "&count=" + count)
-      + "&sessionId=" + encodeURIComponent(sessionId)) 
+        + "&count=" + count
+        + "&sessionId=" + encodeURIComponent(sessionId))
       .then(res => res.json())
       .then(data => {
         if (data.status === "ok") {
