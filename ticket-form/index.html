@@ -1074,11 +1074,14 @@
       </div>
     </div>
 
-  </div><!-- /card-body -->
+   </div><!-- /card-body -->
 </div><!-- /card -->
 
 <script>
-  // ポップアップを閉じる関数
+  // Google Sign-In コールバック
+  window.handleCredential = handleCredential;
+
+  // ポップアップ管理（不要な場合は削除可）
   function closePopup() {
     const popup = document.getElementById("testPopup");
     if (popup) {
@@ -1086,7 +1089,6 @@
     }
   }
 
-  // 背景クリックで閉じる処理
   document.addEventListener("DOMContentLoaded", function() {
     const popup = document.getElementById("testPopup");
     if (popup) {
@@ -1095,6 +1097,14 @@
           closePopup();
         }
       });
+    }
+
+    // Google Sign-In ボタンの再レンダリング
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      google.accounts.id.renderButton(
+        document.querySelector('.g_id_signin'),
+        { theme: 'outline', size: 'large' }
+      );
     }
   });
 
