@@ -1284,23 +1284,18 @@
   }
 
   /* ===== 申請セッション作成 ===== */
-  function startApplicationSession() {
-    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+function startApplicationSession() {
+  fetch(GAS_URL + "?mode=get_or_create_session&email=" + encodeURIComponent(userEmail))
+    .then(res => res.json())
+    .then(data => {
+      handleSessionCreated(data);
+    })
+    .catch(err => {
       hideLoading();
-      showError('loginError', 'セッション管理に接続できません。申請ページをGASから開いてください。');
-      return;
-    }
-
-    google.script.run
-      .withSuccessHandler(handleSessionCreated)
-      .withFailureHandler(function(err) {
-        hideLoading();
-        console.error('getOrCreateSession failed:', err);
-        showError('loginError', '申請状況の確認中にエラーが発生しました。もう一度お試しください。');
-      })
-      .getOrCreateSession(userEmail);
-  }
-
+      console.error('getOrCreateSession failed:', err);
+      showError('loginError', '申請状況の確認中にエラーが発生しました。もう一度お試しください。');
+    });
+}
   /* ===== セッション作成結果 ===== */
   function handleSessionCreated(data) {
     hideLoading();
@@ -1346,43 +1341,43 @@
     }
   }
 
-  function checkWaitingStatus() {
-    if (!sessionId) return;
+  /* ===== 待機列ポーリング（fetchへ変更） ===== */
+function checkWaitingStatus() {
+  if (!sessionId) return;
 
-    google.script.run
-      .withSuccessHandler(function(data) {
-        if (!data) return;
+  fetch(GAS_URL + "?mode=check_session_status&sessionId=" + encodeURIComponent(sessionId))
+    .then(res => res.json())
+    .then(data => {
+      if (!data) return;
 
-        if (data.error) {
-          stopWaitingPolling();
-          showError('loginError', data.error);
-          setStep(1);
-          showSection('loginSection');
-          return;
-        }
+      if (data.error) {
+        stopWaitingPolling();
+        showError('loginError', data.error);
+        setStep(1);
+        showSection('loginSection');
+        return;
+      }
 
-        if (data.canProceed) {
-          stopWaitingPolling();
-          document.getElementById('waitingStatus').textContent =
-            '順番になりました。申請画面へ移動します...';
-
-          // 少しだけ案内を見せてからフォームへ
-          setTimeout(function() {
-            setStep(3);
-            showSection('formSection');
-          }, 500);
-          return;
-        }
-
-        updateWaitingDisplay(data.position, data.estimatedWaitTime);
-      })
-      .withFailureHandler(function(err) {
-        console.warn('checkSessionStatus failed:', err);
+      if (data.canProceed) {
+        stopWaitingPolling();
         document.getElementById('waitingStatus').textContent =
-          '接続を確認しています...';
-      })
-      .checkSessionStatus(sessionId);
-  }
+          '順番になりました。申請画面へ移動します...';
+
+        setTimeout(function() {
+          setStep(3);
+          showSection('formSection');
+        }, 500);
+        return;
+      }
+
+      updateWaitingDisplay(data.position, data.estimatedWaitTime);
+    })
+    .catch(err => {
+      console.warn('checkSessionStatus failed:', err);
+      document.getElementById('waitingStatus').textContent =
+        '接続を確認しています...';
+    });
+}
 
   function updateWaitingDisplay(position, estimatedWaitTime) {
     const positionEl = document.getElementById('waitingPosition');
