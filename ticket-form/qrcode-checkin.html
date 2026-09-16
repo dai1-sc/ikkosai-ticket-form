@@ -18,9 +18,9 @@
   --text-sub: #475569;
   --border-color: #cbd5e1;
   
-  --entry-color: #15803d;
-  --exit-color: #c2410c;
-  --reentry-color: #1d4ed8;
+  --entry-color: #16a34a;
+  --exit-color: #ea580c;
+  --reentry-color: #2563eb;
   --error-color: #dc2626;
 }
 
@@ -169,7 +169,7 @@ video {
 .scan-frame.detected {
   border: 3px solid var(--entry-color);
   opacity: 1;
-  background: rgba(21, 128, 61, 0.05);
+  background: rgba(22, 163, 74, 0.05);
 }
 
 /* 読み取り停止中表示 */
@@ -302,16 +302,17 @@ footer {
   border-top: 1px solid var(--border-color);
 }
 
-/* オーバーレイ判定演出 */
+/* Face ID風モーダル・オーバーレイ */
 #magsafe-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 10;
@@ -323,47 +324,79 @@ footer {
 }
 #magsafe-overlay.active { opacity: 1; }
 
-.magsafe-ring {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  position: relative;
+.faceid-modal {
+  background: #ffffff;
+  padding: 24px 32px;
+  border-radius: 16px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  box-sizing: border-box;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  transform: scale(0.85);
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.25);
+  min-width: 180px;
+}
+#magsafe-overlay.active .faceid-modal {
+  transform: scale(1);
 }
 
-.magsafe-progress {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 70px;
-  height: 70px;
+/* Face ID SVG アニメーション */
+.faceid-svg {
+  width: 76px;
+  height: 76px;
 }
-.magsafe-progress circle {
+.faceid-circle {
   fill: none;
   stroke: var(--magsafe-color);
-  stroke-width: 4;
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  stroke-dasharray: 264;
+  stroke-dashoffset: 264;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+#magsafe-overlay.animate .faceid-circle {
+  animation: strokeCircle 0.45s cubic-bezier(0.65, 0, 0.35, 1) forwards;
 }
 
-.magsafe-svg-icon {
-  width: 36px;
-  height: 36px;
-}
-.magsafe-svg-icon path,
-.magsafe-svg-icon polyline,
-.magsafe-svg-icon line {
+.faceid-check {
   fill: none;
   stroke: var(--magsafe-color);
-  stroke-width: 3;
+  stroke-width: 4.5;
   stroke-linecap: round;
   stroke-linejoin: round;
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+}
+#magsafe-overlay.animate .faceid-check {
+  animation: strokeCheck 0.35s 0.25s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@keyframes strokeCircle {
+  from { stroke-dashoffset: 264; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes strokeCheck {
+  from { stroke-dashoffset: 80; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* ローディング時アニメーション */
+#magsafe-overlay.loading .faceid-circle {
+  stroke: var(--primary-color);
+  stroke-dasharray: 264;
+  stroke-dashoffset: 180;
+  animation: spin 0.8s linear infinite;
+  transform-origin: center;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 #magsafe-text {
   margin-top: 14px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-main);
   text-align: center;
@@ -371,17 +404,17 @@ footer {
 
 #magsafe-subtext {
   margin-top: 8px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--error-color);
   background: #fef2f2;
-  padding: 5px 12px;
+  padding: 4px 10px;
   border-radius: 4px;
   text-align: center;
-  max-width: 90%;
+  max-width: 100%;
 }
 
-.status-ok { --magsafe-color: var(--entry-color); }
+.status-ok { --magsafe-color: #22c55e; } /* Face IDの明るいグリーン */
 .status-exit { --magsafe-color: var(--exit-color); }
 .status-reentry { --magsafe-color: var(--reentry-color); }
 .status-error { --magsafe-color: var(--error-color); }
@@ -414,14 +447,11 @@ footer {
     <video id="video" autoplay playsinline></video>
 
     <div id="magsafe-overlay">
-      <div class="magsafe-ring">
-        <svg class="magsafe-progress" viewBox="0 0 170 170">
-          <circle cx="85" cy="85" r="80"></circle>
-        </svg>
+      <div class="faceid-modal">
         <div id="magsafe-icon-box"></div>
+        <div id="magsafe-text">読み取り中...</div>
+        <div id="magsafe-subtext"></div>
       </div>
-      <div id="magsafe-text">読み取り中...</div>
-      <div id="magsafe-subtext"></div>
     </div>
   </div>
 
@@ -786,27 +816,33 @@ function triggerMagsafe(statusClass, text, soundType, subText = "") {
   if (statusClass === "loading") {
     overlay.className = "active loading";
     txtNode.innerText = text;
+    iconBox.innerHTML = `
+      <svg class="faceid-svg" viewBox="0 0 100 100">
+        <circle class="faceid-circle" cx="50" cy="50" r="42"></circle>
+      </svg>`;
     return;
   }
 
   let svgContent = "";
   if (statusClass === "ok" || statusClass === "reentry") {
     svgContent = `
-      <svg class="magsafe-svg-icon" viewBox="0 0 24 24">
-        <polyline points="4 12 9 17 20 6"></polyline>
+      <svg class="faceid-svg" viewBox="0 0 100 100">
+        <circle class="faceid-circle" cx="50" cy="50" r="42"></circle>
+        <polyline class="faceid-check" points="31 52 44 65 69 38"></polyline>
       </svg>`;
   } else if (statusClass === "exit") {
     svgContent = `
-      <svg class="magsafe-svg-icon" viewBox="0 0 24 24">
-        <path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5"></path>
-        <polyline points="11 9 15 12 11 15"></polyline>
-        <line x1="15" y1="12" x2="3" y2="12"></line>
+      <svg class="faceid-svg" viewBox="0 0 100 100">
+        <circle class="faceid-circle" cx="50" cy="50" r="42"></circle>
+        <polyline class="faceid-check" points="45 35 60 50 45 65"></polyline>
+        <line class="faceid-check" x1="60" y1="50" x2="28" y2="50"></line>
       </svg>`;
   } else if (statusClass === "error" || statusClass === "warning") {
     svgContent = `
-      <svg class="magsafe-svg-icon" viewBox="0 0 24 24">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
+      <svg class="faceid-svg" viewBox="0 0 100 100">
+        <circle class="faceid-circle" cx="50" cy="50" r="42"></circle>
+        <line class="faceid-check" x1="35" y1="35" x2="65" y2="65"></line>
+        <line class="faceid-check" x1="65" y1="35" x2="35" y2="65"></line>
       </svg>`;
   }
 
@@ -817,7 +853,7 @@ function triggerMagsafe(statusClass, text, soundType, subText = "") {
     subTxtNode.innerText = subText;
     subTxtNode.style.display = "block";
     if (statusClass === "warning") {
-      subTxtNode.style.color = "#c2410c";
+      subTxtNode.style.color = "#ea580c";
       subTxtNode.style.background = "#fff7ed";
     } else {
       subTxtNode.style.color = "#dc2626";
@@ -825,11 +861,11 @@ function triggerMagsafe(statusClass, text, soundType, subText = "") {
     }
   }
 
-  overlay.className = "active status-" + statusClass;
+  overlay.className = "active animate status-" + statusClass;
 
   if (soundType) playTone(soundType);
 
-  let displayTime = (statusClass === "warning" || statusClass === "error") ? 3000 : 2000;
+  let displayTime = (statusClass === "warning" || statusClass === "error") ? 3000 : 2200;
 
   setTimeout(() => {
     overlay.className = "";
