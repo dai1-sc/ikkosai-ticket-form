@@ -1533,6 +1533,29 @@ function checkWaitingStatus() {
   let isSubmitting = false;
 
   /* ===== 申請送信（送信前に最新残席を確認） ===== */
+  // ===== 申請中の排他制御（自動リトライ）まわりの設定 =====
+  const SUBMIT_MAX_RETRIES = 8;       // 「busy」時に自動で再試行する最大回数
+  const SUBMIT_RETRY_DELAY_MS = 2000; // 再試行までの待機時間（ミリ秒）
+  const SUBMIT_PROCESSING_MSG =
+    '申請処理中です。画面を閉じたりリロードしたりせず、そのままお待ちください。';
+
+  // 申請処理中にページを離れよう（リロード・タブを閉じる等）とした場合に警告を出す
+  function beforeUnloadDuringSubmit(e) {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+
+  // 送信ボタン・状態を通常表示に戻す（成功して次の画面に進む場合は呼ばない）
+  function resetSubmitButton() {
+    const btn = document.getElementById("submitBtn");
+    const labelEl = document.getElementById("submitLabel");
+    isSubmitting = false;
+    window.removeEventListener('beforeunload', beforeUnloadDuringSubmit);
+    btn.disabled = false;
+    labelEl.textContent = '申請する';
+  }
+
   async function submitForm() {
     if (isSubmitting) return; // すでに送信中なら無視
     const name = document.getElementById("name").value.trim();
@@ -1550,6 +1573,7 @@ function checkWaitingStatus() {
     isSubmitting = true;
     btn.disabled = true;
     labelEl.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span> 送信中...';
+    window.addEventListener('beforeunload', beforeUnloadDuringSubmit);
 
     // 送信直前に最新の残席をチェック（競合回避）
     try {
@@ -1562,65 +1586,86 @@ function checkWaitingStatus() {
         showError('formError', '選択した時間帯が満員になりました。別の時間帯を選択してください。');
         // UI 更新
         await loadRemaining();
-        isSubmitting = false;
-        btn.disabled = false;
-        labelEl.textContent = '申請する';
+        resetSubmitButton();
         return;
       }
       if (remaining < count) {
         showError('formError', '選択した時間帯の残り枚数が不足しています。枚数を減らすか、もう一方の時間帯を選択してください。');
         await loadRemaining();
-        isSubmitting = false;
-        btn.disabled = false;
-        labelEl.textContent = '申請する';
+        resetSubmitButton();
         return;
       }
     } catch (err) {
       showError('formError', '通信エラーが発生しました。インターネット接続を確認してください。');
-      isSubmitting = false;
-      btn.disabled = false;
-      labelEl.textContent = '申請する';
+      resetSubmitButton();
       return;
     }
 
     const submitMode = isEdit ? "edit" : "submit";
-    fetch(GAS_URL + "?mode=" + submitMode
+    const submitUrl = GAS_URL + "?mode=" + submitMode
         + "&email=" + encodeURIComponent(userEmail)
         + "&name=" + encodeURIComponent(name)
         + "&time=" + selectedTime
         + "&count=" + count
-        + "&sessionId=" + encodeURIComponent(sessionId))
+        + "&sessionId=" + encodeURIComponent(sessionId);
+
+    // 申請中オーバーレイ（ローディングバー＋案内文言）を表示してから送信開始
+    showLoading(SUBMIT_PROCESSING_MSG);
+    sendSubmission(submitUrl, 0);
+  }
+
+  // スプレッドシートへの記録が「他の人の申請処理中」で弾かれた（status: "busy"）場合、
+  // エラーにせず自動的に少し待ってから再送信する。ユーザーがボタンを押し直す必要はない。
+  function sendSubmission(url, attempt) {
+    fetch(url)
       .then(res => res.json())
       .then(data => {
         if (data.status === "ok") {
+          hideLoading(true);
           // 送信成功時はポーリングを止めても良い（完了画面へ）
           stopPolling();
           stopWaitingPolling();
+          window.removeEventListener('beforeunload', beforeUnloadDuringSubmit);
+          isSubmitting = false;
           setStep(4);
           showSection('successSection');
+        } else if (data.status === "busy") {
+          if (attempt < SUBMIT_MAX_RETRIES) {
+            const loadingTextEl = document.getElementById('loadingText');
+            if (loadingTextEl) {
+              loadingTextEl.textContent =
+                '現在、他の方の申請を記録中です。自動的に再試行しています…（' + (attempt + 1) + '回目）';
+            }
+            setTimeout(() => sendSubmission(url, attempt + 1), SUBMIT_RETRY_DELAY_MS);
+          } else {
+            hideLoading(true);
+            showError('formError', '現在アクセスが集中しています。恐れ入りますが、もう一度「申請する」ボタンを押してください。');
+            resetSubmitButton();
+          }
         } else if (data.status === "full") {
+          hideLoading(true);
           showError('formError', '選択した時間帯が満員になりました。もう一方の時間帯をお試しください。');
           loadRemaining();
-          isSubmitting = false;
-          btn.disabled = false;
-          labelEl.textContent = '申請する';
-        } else if (data.status === "busy") {
-          showError('formError', '現在アクセスが集中しています。恐れ入りますが、もう一度「申請する」ボタンを押してください。');
-          isSubmitting = false;
-          btn.disabled = false;
-          labelEl.textContent = '申請する';
+          resetSubmitButton();
         } else {
+          hideLoading(true);
           showError('formError', 'エラーが発生しました。もう一度お試しください。');
-          isSubmitting = false;
-          btn.disabled = false;
-          labelEl.textContent = '申請する';
+          resetSubmitButton();
         }
       })
       .catch(() => {
-        showError('formError', '通信エラーが発生しました。インターネット接続を確認してください。');
-        isSubmitting = false;
-        btn.disabled = false;
-        labelEl.textContent = '申請する';
+        if (attempt < SUBMIT_MAX_RETRIES) {
+          const loadingTextEl = document.getElementById('loadingText');
+          if (loadingTextEl) {
+            loadingTextEl.textContent =
+              '通信が不安定です。自動的に再試行しています…（' + (attempt + 1) + '回目）';
+          }
+          setTimeout(() => sendSubmission(url, attempt + 1), SUBMIT_RETRY_DELAY_MS);
+        } else {
+          hideLoading(true);
+          showError('formError', '通信エラーが発生しました。インターネット接続を確認してください。');
+          resetSubmitButton();
+        }
       });
   }
 </script>
