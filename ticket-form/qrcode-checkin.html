@@ -673,98 +673,145 @@ function processTicket(qrData) {
   }, 1, 8000)
   .then(res => res.text())
   .then(result => {
+    // GASのレスポンスは "ステータス|入場区分(a/b/c/any)" の形式。
+    // 成功以外（notfound / already 等）は入場区分が付かない単独の文字列で返る。
     const parts = result.split("|");
-    const status = parts[0]; 
-    const ticketTime = parts[1] || "";
-
-    const now = new Date();
-    const hour = now.getHours();
-    const isAM = hour < 13; 
-
-    if (status === "OK" || status === "RE_ENTRY_OK") {
-      if (ticketTime === "am" && !isAM) {
-        lastInvalidId = "";
-        triggerMagsafe("error", "時間帯エラー", "error", "このチケットは午前用です");
-        resultPlaceholder.innerHTML = `
-          <div class="error-container">
-            <div class="error-title">時間帯エラー</div>
-            <div class="error-instruction">
-              このチケットは<b>午前の部</b>用です。<br>午後の部のチケットをご確認ください。
-            </div>
-          </div>`;
-        return;
-      }
-      if (ticketTime === "pm" && isAM) {
-        lastInvalidId = "";
-        triggerMagsafe("error", "時間帯エラー", "error", "このチケットは午後用です");
-        resultPlaceholder.innerHTML = `
-          <div class="error-container">
-            <div class="error-title">時間帯エラー</div>
-            <div class="error-instruction">
-              このチケットは<b>午後の部</b>用です。<br>午前の部のチケットをご確認ください。
-            </div>
-          </div>`;
-        return;
-      }
-    }
+    const status = parts[0];
+    const ticketPart = (parts[1] || "").trim().toLowerCase(); // "a" / "b" / "c" / "any"
 
     lastInvalidId = "";
 
     if (status === "OK") {
       triggerMagsafe("ok", "入場受付完了", "ok");
       resultPlaceholder.innerHTML = `<b style="color:var(--entry-color); font-size:20px;">【成功】初回入場</b><br><br><b>ID:</b> ${ticketId}<br><b>時刻:</b> ${new Date().toLocaleTimeString()}`;
-    } else if (status === "EXIT_OK") { 
+    }
+    else if (status === "EXIT_OK") {
       triggerMagsafe("exit", "一時退場完了", "exit");
       resultPlaceholder.innerHTML = `<b style="color:var(--exit-color); font-size:20px;">【退場】一時退場確認</b><br><br><b>ID:</b> ${ticketId}<br><b>時刻:</b> ${new Date().toLocaleTimeString()}`;
-    } else if (status === "RE_ENTRY_OK") { 
+    }
+    else if (status === "RE_ENTRY_OK") {
       triggerMagsafe("reentry", "再入場完了", "ok");
       resultPlaceholder.innerHTML = `<b style="color:var(--reentry-color); font-size:20px;">【成功】再入場</b><br><br><b>ID:</b> ${ticketId}<br><b>時刻:</b> ${new Date().toLocaleTimeString()}`;
-    } 
-    else if (status === "WRONG_TIME_AM") {
-      triggerMagsafe("error", "時間帯エラー", "error", "このチケットは午前用です");
+    }
+    // ① スプレッドシート（台帳）に記録されていないコード
+    else if (status === "notfound") {
+      triggerMagsafe("error", "未登録チケット", "invalid", "台帳に見つかりません");
+      resultPlaceholder.innerHTML = `
+        <div class="error-container">
+          <div class="error-title">未登録のチケット</div>
+          <div class="error-instruction">
+            このチケットIDはスプレッドシートに記録されていません。<br>
+            チケットが偽造・不正なものでないか確認し、必要であれば本部へ連絡してください。
+          </div>
+        </div>`;
+    }
+    // ⑤⑥ Aパート時間帯にB/C、Bパート時間帯にCが読み込まれた場合（GAS側がWRONG_TIME_A/B/Cを返す）
+    else if (status === "WRONG_TIME_A" || status === "WRONG_TIME_B" || status === "WRONG_TIME_C") {
+      const partKey = status.replace("WRONG_TIME_", "");
+      const partLabels = {
+        A: "Aパート（9:40〜）",
+        B: "Bパート（11:00〜）",
+        C: "Cパート（13:00〜）"
+      };
+      const label = partLabels[partKey] || "対象パート";
+      triggerMagsafe("error", "時間帯エラー", "error", `${label}はまだ入場開始前です`);
       resultPlaceholder.innerHTML = `
         <div class="error-container">
           <div class="error-title">時間帯エラー</div>
           <div class="error-instruction">
-            このチケットは<b>午前の部</b>用です。<br>午後の部のチケットをご確認ください。
+            このチケットは<b>${label}</b>用です。<br>
+            まだこのパートの入場開始時刻になっていません。開始時刻を過ぎてから再度スキャンしてください。
           </div>
         </div>`;
     }
-    else if (status === "WRONG_TIME_PM") {
-      triggerMagsafe("error", "時間帯エラー", "error", "このチケットは午後用です");
-      resultPlaceholder.innerHTML = `
-        <div class="error-container">
-          <div class="error-title">時間帯エラー</div>
-          <div class="error-instruction">
-            このチケットは<b>午後の部</b>用です。<br>午前の部のチケットをご確認ください。
-          </div>
-        </div>`;
-    }
-    else if ((status === "ALREADY_OUT" || status === "ERROR_NOT_IN_YET") && currentMode === "entry") {
-      triggerMagsafe("warning", "モード切替が必要です", "error", "上のタブを「再入場」に変更してください");
+    // ③ 一時退場済みのチケットが「初回入場」タブで読み込まれた場合／
+    // ② すでに初回入場・再入場済みのチケットが「初回入場」タブで再度読み込まれた場合
+    // （GAS側は現在どちらも同じ "already" を返すため、両方の可能性を案内する）
+    else if (status === "already") {
+      triggerMagsafe("warning", "処理済みチケットです", "error", "入場状況をご確認ください");
       resultPlaceholder.innerHTML = `
         <div class="warning-container">
-          <div class="warning-title">再入場モードでスキャンしてください</div>
+          <div class="warning-title">処理済みのチケットです</div>
           <div class="warning-instruction">
-            このチケットは既に一時退場処理が行われています。<br>
-            上部タブ<b>「再入場」</b>に切り替えてから再度スキャンしてください。
+            このチケットは既に<b>初回入場</b>または<b>一時退場</b>の処理が完了しています。<br>
+            現在「一時退場中」の場合は、上部タブ<b>「再入場」</b>に切り替えてから再度スキャンしてください。<br>
+            それ以外の場合は二重利用でないか確認し、本部へご連絡ください。
           </div>
         </div>`;
-    } 
-    else if (status === "already" || status === "ALREADY_IN") {
-      triggerMagsafe("error", "重複エラー（入場済み）", "error", "既に処理済みのチケットです");
+    }
+    // ④-a すでに再入場（＝入場中）のチケットが「再入場」タブで再度読み込まれた場合
+    else if (status === "ALREADY_IN") {
+      triggerMagsafe("error", "重複エラー（入場中）", "error", "既に入場中のチケットです");
       resultPlaceholder.innerHTML = `
         <div class="error-container">
-          <div class="error-title">重複エラー（滞在中）</div>
+          <div class="error-title">重複エラー（入場中）</div>
           <div class="error-instruction">
-            このチケットは既に初回入場または再入場処理が完了しています。<br>
+            このチケットは既に入場中（初回入場または再入場済み）です。<br>
             二重利用でないか確認してください。
           </div>
         </div>`;
     }
+    // 「一時退場」タブで、既に退場済みのチケットを読み込んだ場合
+    else if (status === "ALREADY_OUT" && currentMode === "exit") {
+      triggerMagsafe("error", "重複エラー（退場済み）", "error", "既に一時退場処理済みです");
+      resultPlaceholder.innerHTML = `
+        <div class="error-container">
+          <div class="error-title">重複エラー（退場済み）</div>
+          <div class="error-instruction">
+            このチケットは既に一時退場処理が完了しています。<br>
+            二重操作でないか確認してください。
+          </div>
+        </div>`;
+    }
+    // 「一時退場」または「再入場」タブで、まだ一度も入場していないチケットを読み込んだ場合
+    else if (status === "ERROR_NOT_IN_YET") {
+      const modeLabel = currentMode === "exit" ? "一時退場" : "再入場";
+      triggerMagsafe("warning", "入場記録がありません", "error", "「初回入場」タブでスキャンしてください");
+      resultPlaceholder.innerHTML = `
+        <div class="warning-container">
+          <div class="warning-title">まだ入場していないチケットです</div>
+          <div class="warning-instruction">
+            このチケットはまだ一度も入場処理が行われていないため、<b>${modeLabel}</b>として処理できません。<br>
+            上部タブ<b>「初回入場」</b>に切り替えてから再度スキャンしてください。
+          </div>
+        </div>`;
+    }
+    // サーバー混雑（同時アクセスでロック取得に失敗）
+    else if (status === "BUSY") {
+      triggerMagsafe("error", "サーバー混雑中", "error", "少し待って再度スキャンしてください");
+      resultPlaceholder.innerHTML = `
+        <div class="error-container">
+          <div class="error-title">サーバー混雑中</div>
+          <div class="error-instruction">
+            他の端末からの処理と重なったため、一時的に処理できませんでした。<br>
+            数秒待ってから、もう一度スキャンしてください。
+          </div>
+        </div>`;
+    }
+    // ⑦ サーバー側で例外が発生した場合
+    else if (status === "SERVER_ERROR") {
+      triggerMagsafe("error", "サーバーエラー", "error", "本部にご連絡ください");
+      resultPlaceholder.innerHTML = `
+        <div class="error-container">
+          <div class="error-title">サーバーエラー</div>
+          <div class="error-instruction">
+            サーバー側で処理中にエラーが発生しました。<br>
+            再度スキャンしても解決しない場合は、本部へご連絡ください。
+          </div>
+        </div>`;
+    }
+    // ⑦ その他、想定外のレスポンスが返った場合
     else {
       lastInvalidId = ticketId;
-      showInvalidTicketError(qrData);
+      triggerMagsafe("error", "処理エラー", "error", "本部にご連絡ください");
+      resultPlaceholder.innerHTML = `
+        <div class="error-container">
+          <div class="error-title">予期しないエラー</div>
+          <div class="error-instruction">
+            想定外の応答を受信しました（ステータス: ${status || "不明"}）。<br>
+            お手数ですが本部へご連絡ください。
+          </div>
+        </div>`;
     }
   })
   .catch(err => {
