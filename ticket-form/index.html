@@ -472,13 +472,13 @@
     /* ===== 時間帯選択カード ===== */
     .time-options {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
     }
     .time-option {
       border: 1px solid var(--gray-300);
       border-radius: var(--radius-md);
-      padding: 14px 10px;
+      padding: 12px 6px;
       text-align: center;
       cursor: pointer;
       background: var(--white);
@@ -486,6 +486,14 @@
       position: relative;
       outline: none;
     }
+    .time-option .time-note {
+      font-size: 10px;
+      line-height: 1.4;
+      color: var(--gray-600);
+      margin-top: 6px;
+    }
+    .time-option.selected .time-note { color: var(--navy-mid); }
+    .time-option.full .time-note { color: var(--gray-400); }
     .time-option:hover:not(.full) {
       border-color: var(--navy-mid);
       background: var(--gray-100);
@@ -1016,21 +1024,30 @@
             <span class="required-badge" aria-label="必須">必須</span>
           </legend>
           <div class="time-options" role="radiogroup" aria-label="入場時間帯を選択">
-            <div class="time-option" id="opt-am" role="radio" aria-checked="false" tabindex="0"
-                 onclick="selectTime('am')" onkeydown="if(event.key==='Enter'||event.key===' ')selectTime('am')">
-              <div class="time-label">一部（11:00~12:50）</div>
+            <div class="time-option" id="opt-a" role="radio" aria-checked="false" tabindex="0"
+                 onclick="selectTime('a')" onkeydown="if(event.key==='Enter'||event.key===' ')selectTime('a')">
+              <div class="time-label">Aパート（9:40）</div>
               <div class="capacity-bar" aria-hidden="true">
-                <div class="capacity-fill" id="fill-am" style="width:0%"></div>
+                <div class="capacity-fill" id="fill-a" style="width:0%"></div>
               </div>
-              <div class="remaining" id="remaining-am" aria-live="polite">—</div>
+              <div class="remaining" id="remaining-a" aria-live="polite">—</div>
+              <div class="time-note">※ステージ部門参加生徒の関係者のみ選択可</div>
             </div>
-            <div class="time-option" id="opt-pm" role="radio" aria-checked="false" tabindex="0"
-                 onclick="selectTime('pm')" onkeydown="if(event.key==='Enter'||event.key===' ')selectTime('pm')">
-              <div class="time-label">二部（13:00~14:50）</div>
+            <div class="time-option" id="opt-b" role="radio" aria-checked="false" tabindex="0"
+                 onclick="selectTime('b')" onkeydown="if(event.key==='Enter'||event.key===' ')selectTime('b')">
+              <div class="time-label">Bパート（11:00）</div>
               <div class="capacity-bar" aria-hidden="true">
-                <div class="capacity-fill" id="fill-pm" style="width:0%"></div>
+                <div class="capacity-fill" id="fill-b" style="width:0%"></div>
               </div>
-              <div class="remaining" id="remaining-pm" aria-live="polite">—</div>
+              <div class="remaining" id="remaining-b" aria-live="polite">—</div>
+            </div>
+            <div class="time-option" id="opt-c" role="radio" aria-checked="false" tabindex="0"
+                 onclick="selectTime('c')" onkeydown="if(event.key==='Enter'||event.key===' ')selectTime('c')">
+              <div class="time-label">Cパート（13:00）</div>
+              <div class="capacity-bar" aria-hidden="true">
+                <div class="capacity-fill" id="fill-c" style="width:0%"></div>
+              </div>
+              <div class="remaining" id="remaining-c" aria-live="polite">—</div>
             </div>
           </div>
         </fieldset>
@@ -1111,6 +1128,12 @@
   const GAS_URL = "https://script.google.com/macros/s/AKfycbxdMLfj6qHITIEInB52DC1DJqojKlb-dWb43AoqMchlkCFyuqRpZtqB_0u6vcFydGw/exec";
   const ALLOWED_DOMAIN = "g.bears.ed.jp";
   const CAPACITY = 1000;
+  const TIME_PARTS = ["a", "b", "c"];
+  const TIME_LABELS = {
+    a: "Aパート（9:40）",
+    b: "Bパート（11:00）",
+    c: "Cパート（13:00）"
+  };
 
   let userEmail = "";
   let selectedTime = "";
@@ -1261,7 +1284,7 @@
         .then(data => {
           if (data.exists) {
             // 申請済みの場合は待機列に入らない
-            const timeLabel = data.time === "am" ? "午前の部" : "午後の部";
+            const timeLabel = TIME_LABELS[data.time] || data.time;
             document.getElementById("alreadyTime").textContent = timeLabel;
             document.getElementById("alreadyCount").textContent = data.count + "枚";
             const statusEl = document.getElementById("alreadyStatus");
@@ -1422,9 +1445,8 @@ function checkWaitingStatus() {
     return fetch(GAS_URL + "?mode=remaining")
       .then(res => res.json())
       .then(data => {
-        // data は { am: <usedCount>, pm: <usedCount> } の想定
-        updateOption("am", data.am);
-        updateOption("pm", data.pm);
+        // data は { a: <usedCount>, b: <usedCount>, c: <usedCount> } の想定
+        TIME_PARTS.forEach(t => updateOption(t, data[t]));
         // 初回読み込み後はローディングを消す（複数の showLoading を考慮）
         hideLoading();
       })
@@ -1496,7 +1518,7 @@ function checkWaitingStatus() {
     if (opt.classList.contains("full")) return;
 
     selectedTime = time;
-    ["am", "pm"].forEach(t => {
+    TIME_PARTS.forEach(t => {
       const el = document.getElementById("opt-" + t);
       el.classList.remove("selected");
       el.setAttribute('aria-checked', 'false');
@@ -1579,7 +1601,7 @@ function checkWaitingStatus() {
     try {
       const res = await fetch(GAS_URL + "?mode=remaining");
       const data = await res.json();
-      const used = selectedTime === 'am' ? data.am : data.pm;
+      const used = data[selectedTime];
       const remaining = CAPACITY - used;
 
       if (remaining <= 0) {
@@ -1590,7 +1612,7 @@ function checkWaitingStatus() {
         return;
       }
       if (remaining < count) {
-        showError('formError', '選択した時間帯の残り枚数が不足しています。枚数を減らすか、もう一方の時間帯を選択してください。');
+        showError('formError', '選択した時間帯の残り枚数が不足しています。枚数を減らすか、他の時間帯を選択してください。');
         await loadRemaining();
         resetSubmitButton();
         return;
@@ -1644,7 +1666,7 @@ function checkWaitingStatus() {
           }
         } else if (data.status === "full") {
           hideLoading(true);
-          showError('formError', '選択した時間帯が満員になりました。もう一方の時間帯をお試しください。');
+          showError('formError', '選択した時間帯が満員になりました。他の時間帯をお試しください。');
           loadRemaining();
           resetSubmitButton();
         } else {
