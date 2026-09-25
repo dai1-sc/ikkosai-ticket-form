@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>校内リアルタイム混雑状況 | 文化祭電子黒板</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #1a1a2e;
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+    }
+
+    /* 1F / 2F スライド表示コンテナ */
+    .slide-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .floor-view {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+      pointer-events: none;
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .floor-view.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* 背景画像設定（適宜パスを変更） */
+    #view-1f {
+      background-image: url('map1f.png');
+    }
+
+    #view-2f {
+      background-image: url('map2f.png');
+    }
+
+    /* 階数バッジ */
+    .floor-badge {
+      position: absolute;
+      top: 24px;
+      left: 32px;
+      background: rgba(0, 0, 0, 0.75);
+      color: #ffffff;
+      padding: 12px 28px;
+      font-size: 36px;
+      font-weight: bold;
+      border-radius: 40px;
+      border: 2px solid #00d2d3;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+    }
+
+    /* 各クラスの待ち時間表示カード (座標はCSSで調整) */
+    .class-card {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 10px 16px;
+      text-align: center;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+      min-width: 140px;
+      transition: all 0.3s ease;
+    }
+
+    .class-name {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .wait-time {
+      font-size: 22px;
+      font-weight: 800;
+      color: #2e86de;
+    }
+
+    /* 混雑状態別のカラー強調 */
+    .status-smooth {
+      border: 3px solid #10ac84;
+      background: #e6fffa;
+    }
+    .status-smooth .wait-time { color: #10ac84; }
+
+    .status-busy {
+      border: 3px solid #ff9f43;
+      background: #fff9e6;
+    }
+    .status-busy .wait-time { color: #ee5253; }
+
+    .status-crowded {
+      border: 3px solid #ee5253;
+      background: #ffeae6;
+      animation: pulse 2s infinite;
+    }
+    .status-crowded .wait-time { color: #ff0000; }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(238, 82, 83, 0.7); }
+      70% { box-shadow: 0 0 0 15px rgba(238, 82, 83, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(238, 82, 83, 0); }
+    }
+
+    /* 位置指定の例：Canvaのマップに合わせて % で位置調整してください */
+    /* 1F クラスの配置例 */
+    #card-1-A { top: 35%; left: 25%; }
+    #card-1-B { top: 35%; left: 50%; }
+    #card-1-C { top: 35%; left: 75%; }
+
+    /* 2F クラスの配置例 */
+    #card-2-A { top: 40%; left: 30%; }
+    #card-2-B { top: 40%; left: 70%; }
+
+    /* フッター更新インジケーター */
+    .footer-status {
+      position: absolute;
+      bottom: 16px;
+      right: 24px;
+      background: rgba(0, 0, 0, 0.6);
+      color: #aaa;
+      padding: 6px 16px;
+      font-size: 14px;
+      border-radius: 20px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="slide-container">
+    <!-- 1階の見取り図画面 -->
+    <div id="view-1f" class="floor-view active">
+      <div class="floor-badge">1 階</div>
+      
+      <!-- 1Fのクラスカード配置エリア (Canvaマップの教室位置に合わせて調整) -->
+      <div id="card-1-A" class="class-card">
+        <div class="class-name">1-A</div>
+        <div class="wait-time" id="time-1-A">---</div>
+      </div>
+
+      <div id="card-1-B" class="class-card">
+        <div class="class-name">1-B</div>
+        <div class="wait-time" id="time-1-B">---</div>
+      </div>
+
+      <div id="card-1-C" class="class-card">
+        <div class="class-name">1-C</div>
+        <div class="wait-time" id="time-1-C">---</div>
+      </div>
+    </div>
+
+    <!-- 2階の見取り図画面 -->
+    <div id="view-2f" class="floor-view">
+      <div class="floor-badge">2 階</div>
+      
+      <!-- 2Fのクラスカード配置エリア -->
+      <div id="card-2-A" class="class-card">
+        <div class="class-name">2-A</div>
+        <div class="wait-time" id="time-2-A">---</div>
+      </div>
+
+      <div id="card-2-B" class="class-card">
+        <div class="class-name">2-B</div>
+        <div class="wait-time" id="time-2-B">---</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-status" id="last-updated">更新中...</div>
+
+  <script>
+    // ★ここにGASでデプロイしたウェブアプリURLを入力します
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbznxM7bkSheEYGq6_OE3jWZKhoYDgTy9eC5zbCX55JS1LcFwANejFVPmS3Xj9Z4tUc/exec';
+
+    // 画面の自動切替設定 (5.5秒ごと)
+    const TOGGLE_INTERVAL = 5500;
+    // データ自動更新設定 (10秒ごと)
+    const FETCH_INTERVAL = 10000;
+
+    let is1FVisible = true;
+
+    // 1F と 2F の画面切替ロジック
+    function toggleFloors() {
+      const view1f = document.getElementById('view-1f');
+      const view2f = document.getElementById('view-2f');
+
+      if (is1FVisible) {
+        view1f.classList.remove('active');
+        view2f.classList.add('active');
+      } else {
+        view2f.classList.remove('active');
+        view1f.classList.add('active');
+      }
+      is1FVisible = !is1FVisible;
+    }
+
+    // GASからデータ取得＆画面反映
+    async function fetchWaitTimes() {
+      if (GAS_URL === 'YOUR_GAS_DEPLOY_URL_HERE') {
+        console.warn('GAS_URLが未設定です。');
+        return;
+      }
+
+      try {
+        const response = await fetch(GAS_URL);
+        const data = await response.json();
+
+        if (data.status === 'success' && data.classes) {
+          data.classes.forEach(item => {
+            // クラス名表記の表記揺れ吸収（例: "1-A" や "1A"）
+            const formattedName = item.className.replace('-', ''); // "1A"
+            const timeEl = document.getElementById(`time-${item.className}`);
+            const cardEl = document.getElementById(`card-${item.className}`);
+
+            if (timeEl && cardEl) {
+              timeEl.textContent = item.statusText;
+
+              // 混雑状況に応じた枠色スタイル変更
+              cardEl.classList.remove('status-smooth', 'status-busy', 'status-crowded');
+              if (item.waitTime === 0) {
+                cardEl.classList.add('status-smooth');
+              } else if (item.waitTime <= 15) {
+                cardEl.classList.add('status-busy');
+              } else {
+                cardEl.classList.add('status-crowded');
+              }
+            }
+          });
+
+          const now = new Date();
+          document.getElementById('last-updated').textContent = `最終更新: ${now.toLocaleTimeString()}`;
+        }
+      } catch (error) {
+        console.error('データ取得失敗:', error);
+        document.getElementById('last-updated').textContent = '通信エラー (自動再試行中)';
+      }
+    }
+
+    // 初期化とタイマーのセット
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchWaitTimes();
+      setInterval(toggleFloors, TOGGLE_INTERVAL);
+      setInterval(fetchWaitTimes, FETCH_INTERVAL);
+    });
+  </script>
+</body>
+</html>
