@@ -15,8 +15,8 @@
       width: 100vw;
       height: 100vh;
       overflow: hidden;
-      background-color: #f0f2f5;
-      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+      background-color: #0f172a; /* 引き締まったダークスレート背景 */
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -39,7 +39,7 @@
       width: 100%;
       height: 100%;
       opacity: 0;
-      transition: opacity 0.8s ease-in-out;
+      transition: opacity 0.6s ease;
       pointer-events: none;
       display: flex;
       justify-content: center;
@@ -51,7 +51,7 @@
       pointer-events: auto;
     }
 
-    /* 画像のアスペクト比を維持して画面いっぱいに収めるコンテナ */
+    /* マップコンテナ */
     .map-container {
       position: relative;
       aspect-ratio: 16 / 9;
@@ -71,54 +71,49 @@
       background: url('map2f.png') center / contain no-repeat;
     }
 
-    /* 各クラスの待ち時間バッジ */
+    /* --------------------------------------------------
+       シンプルで視認性の高いクラスバッジ
+    -------------------------------------------------- */
     .class-card {
       position: absolute;
       transform: translate(-50%, -50%);
       width: 6.8%;
-      padding: 0.5% 0.2%;
-      border-radius: 6px;
+      padding: 0.4% 0.2%;
+      border-radius: 4px;
       text-align: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      transition: all 0.3s ease;
       background: #ffffff;
-      border: 2px solid #ccc;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      border: 1px solid #cbd5e1;
+      border-left: 5px solid #94a3b8; /* デフォルトの左端カラーバー */
+      transition: border-color 0.3s ease;
     }
 
     .wait-time {
       font-size: clamp(10px, 1.1vw, 20px);
-      font-weight: 800;
+      font-weight: 700;
       line-height: 1.2;
       white-space: nowrap;
+      color: #0f172a;
     }
 
-    /* 混雑状況による色分け表示 */
+    /* 混雑状況：左端のカラーバーと文字で洗練された区別 */
     .status-smooth {
-      background-color: #e6fffa;
-      border-color: #10ac84;
-      color: #0e8a6a;
+      border-left-color: #10b981; /* グリーン */
     }
 
     .status-busy {
-      background-color: #fff9e6;
-      border-color: #ff9f43;
-      color: #d97706;
+      border-left-color: #f59e0b; /* アンバー */
     }
 
     .status-crowded {
-      background-color: #ffeae6;
-      border-color: #ee5253;
-      color: #d63031;
-      animation: pulse 2s infinite;
+      border-left-color: #ef4444; /* レッド */
     }
 
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(238, 82, 83, 0.6); }
-      70% { box-shadow: 0 0 0 10px rgba(238, 82, 83, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(238, 82, 83, 0); }
+    .status-crowded .wait-time {
+      color: #dc2626;
     }
 
-    /* 調整済みの1階・2階精密座標設定 */
+    /* 調整済みの1階・2階精密座標 */
     #card-1-1, #card-2-1 { top: 39.5%; left: 10.6%; }
     #card-1-2, #card-2-2 { top: 39.5%; left: 19.5%; }
     #card-1-3, #card-2-3 { top: 39.5%; left: 32.8%; }
@@ -130,56 +125,64 @@
     #card-1-9, #card-2-9 { top: 39.5%; left: 89.3%; }
 
     /* --------------------------------------------------
-       📍 現在地ピンのデザインと位置指定
+       現在地ピン（シンプル＆プロフェッショナル）
     -------------------------------------------------- */
     .current-location-pin {
       position: absolute;
       transform: translate(-50%, -100%);
-      background: #ff3838;
+      background: #0f172a;
       color: #ffffff;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: clamp(11px, 1.2vw, 22px);
-      font-weight: bold;
-      box-shadow: 0 4px 12px rgba(255, 56, 56, 0.4);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: clamp(10px, 1.0vw, 18px);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       z-index: 20;
-      display: none; /* デフォルト非表示（URLパラメータで指定された場所のみ表示） */
+      display: none;
       white-space: nowrap;
-      animation: pinBounce 1.5s infinite ease-in-out;
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    /* ピンの下三角矢印 */
+    /* 現在地ピンの赤ドットと下矢印 */
+    .current-location-pin .pin-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background-color: #ef4444;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
     .current-location-pin::after {
       content: '';
       position: absolute;
-      bottom: -7px;
+      bottom: -6px;
       left: 50%;
       transform: translateX(-50%);
-      border-width: 7px 7px 0;
+      border-width: 6px 5px 0;
       border-style: solid;
-      border-color: #ff3838 transparent;
+      border-color: #0f172a transparent;
     }
 
-    @keyframes pinBounce {
-      0%, 100% { transform: translate(-50%, -100%); }
-      50% { transform: translate(-50%, -115%); }
-    }
-
-    /* 左右階段の中央に合わせてピンを配置 */
+    /* 左右階段のピン配置座標 */
     .pin-left { top: 27.0%; left: 26.15%; }
     .pin-right { top: 27.0%; left: 82.55%; }
 
-    /* 右下の最終更新インジケーター */
+    /* 右下のステータス表示 */
     .footer-status {
       position: absolute;
       bottom: 12px;
       right: 20px;
-      background: rgba(0, 0, 0, 0.65);
-      color: #ffffff;
-      padding: 6px 16px;
-      font-size: 13px;
-      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #94a3b8;
+      padding: 6px 14px;
+      font-size: 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
       z-index: 10;
+      font-family: monospace;
     }
   </style>
 </head>
@@ -189,9 +192,9 @@
     <!-- 1階表示 -->
     <div id="view-1f" class="floor-view active">
       <div class="map-container">
-        <!-- 📍 現在地ピン（1階） -->
-        <div id="pin-1f-left" class="current-location-pin pin-left">📍 現在地</div>
-        <div id="pin-1f-right" class="current-location-pin pin-right">📍 現在地</div>
+        <!-- 現在地表示 (1階) -->
+        <div id="pin-1f-left" class="current-location-pin pin-left"><span class="pin-dot"></span>現在地</div>
+        <div id="pin-1f-right" class="current-location-pin pin-right"><span class="pin-dot"></span>現在地</div>
 
         <div id="card-1-1" class="class-card"><div class="wait-time" id="time-1-1">---</div></div>
         <div id="card-1-2" class="class-card"><div class="wait-time" id="time-1-2">---</div></div>
@@ -208,9 +211,9 @@
     <!-- 2階表示 -->
     <div id="view-2f" class="floor-view">
       <div class="map-container">
-        <!-- 📍 現在地ピン（2階） -->
-        <div id="pin-2f-left" class="current-location-pin pin-left">📍 現在地</div>
-        <div id="pin-2f-right" class="current-location-pin pin-right">📍 現在地</div>
+        <!-- 現在地表示 (2階) -->
+        <div id="pin-2f-left" class="current-location-pin pin-left"><span class="pin-dot"></span>現在地</div>
+        <div id="pin-2f-right" class="current-location-pin pin-right"><span class="pin-dot"></span>現在地</div>
 
         <div id="card-2-1" class="class-card"><div class="wait-time" id="time-2-1">---</div></div>
         <div id="card-2-2" class="class-card"><div class="wait-time" id="time-2-2">---</div></div>
@@ -225,7 +228,7 @@
     </div>
   </div>
 
-  <div class="footer-status" id="last-updated">データ確認中...</div>
+  <div class="footer-status" id="last-updated">更新確認中</div>
 
   <script>
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbznxM7bkSheEYGq6_OE3jWZKhoYDgTy9eC5zbCX55JS1LcFwANejFVPmS3Xj9Z4tUc/exec';
@@ -234,15 +237,15 @@
 
     let is1FVisible = true;
 
-    // URLパラメータ(?loc=1f-left 等)から設置場所を取得して「📍 現在地」ピンを表示
+    // URLパラメータ(?loc=1f-left 等)から設置場所を取得して現在地ピンを表示
     function setupCurrentLocationPin() {
       const urlParams = new URLSearchParams(window.location.search);
-      const loc = urlParams.get('loc'); // '1f-left', '1f-right', '2f-left', '2f-right'
+      const loc = urlParams.get('loc');
 
       if (loc) {
         const targetPin = document.getElementById(`pin-${loc}`);
         if (targetPin) {
-          targetPin.style.display = 'block';
+          targetPin.style.display = 'inline-block';
         }
       }
     }
@@ -291,11 +294,12 @@
           });
 
           const now = new Date();
-          document.getElementById('last-updated').textContent = `自動更新中 (${now.toLocaleTimeString()})`;
+          const timeStr = now.toTimeString().split(' ')[0];
+          document.getElementById('last-updated').textContent = `更新: ${timeStr}`;
         }
       } catch (error) {
         console.error('データ取得エラー:', error);
-        document.getElementById('last-updated').textContent = '通信エラー (自動再試行中)';
+        document.getElementById('last-updated').textContent = '通信エラー';
       }
     }
 
