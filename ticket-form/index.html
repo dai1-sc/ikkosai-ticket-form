@@ -472,13 +472,13 @@
     /* ===== 時間帯選択カード ===== */
     .time-options {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
     }
     .time-option {
       border: 1px solid var(--gray-300);
       border-radius: var(--radius-md);
-      padding: 14px 10px;
+      padding: 12px 6px;
       text-align: center;
       cursor: pointer;
       background: var(--white);
@@ -486,6 +486,14 @@
       position: relative;
       outline: none;
     }
+    .time-option .time-note {
+      font-size: 10px;
+      line-height: 1.4;
+      color: var(--gray-600);
+      margin-top: 6px;
+    }
+    .time-option.selected .time-note { color: var(--navy-mid); }
+    .time-option.full .time-note { color: var(--gray-400); }
     .time-option:hover:not(.full) {
       border-color: var(--navy-mid);
       background: var(--gray-100);
@@ -897,35 +905,37 @@
   <div class="card-body">
 
     <!-- ① ログイン画面 -->
-    <div class="section active" id="loginSection" role="region" aria-label="ログイン">
-      <div class="login-intro">
-        <div class="login-icon" aria-hidden="true">🔑</div>
-        <h2>学校アカウントでログイン</h2>
-        <p>申請には学校のGoogleアカウント<br>（@g.bears.ed.jp）が必要です</p>
-      </div>
-      <div class="login-divider" aria-hidden="true">認証</div>
-      <div class="google-btn-wrap">
-        <div id="g_id_onload"
-          data-client_id="254956450031-t49krcv9oncctqnvjbh5dmempvo418su.apps.googleusercontent.com"
-          data-callback="handleCredential"
-          data-auto_prompt="false">
-        </div>
-        <div class="g_id_signin" data-type="standard" data-size="large" data-text="signin_with" data-shape="rectangular" data-logo_alignment="left"></div>
-      </div>
-      <div class="info-box" role="note">
-        <span class="icon" aria-hidden="true">ⓘ</span>
-        <span>個人のGoogleアカウントではログインできません。学校から配付されたアカウントをお使いください。</span>
-      </div>
-      <div class="error-msg" id="loginError" role="alert" aria-live="assertive">
-        <span class="icon" aria-hidden="true">⚠️</span>
-        <span id="loginErrorText"></span>
-      </div>
+<div class="section active" id="loginSection" role="region" aria-label="ログイン">
+  <div class="login-intro" id="loginIntro">
+    <div class="login-icon" aria-hidden="true">🔑</div>
+    <h2>学校アカウントでログイン</h2>
+    <p>申請には学校のGoogleアカウント<br>（@g.bears.ed.jp）が必要です</p>
+  </div>
+
+  <div class="login-divider" id="loginDivider" aria-hidden="true">認証</div>
+
+  <div class="google-btn-wrap" id="googleBtnWrap">
+    <div id="g_id_onload"
+      data-client_id="254956450031-t49krcv9oncctqnvjbh5dmempvo418su.apps.googleusercontent.com"
+      data-callback="handleCredential"
+      data-auto_prompt="false">
     </div>
+    <div class="g_id_signin" data-type="standard" data-size="large" data-text="signin_with" data-shape="rectangular" data-logo_alignment="left"></div>
+  </div>
+
+  <div class="info-box" id="loginInfoBox" role="note">
+    <span class="icon" aria-hidden="true">ⓘ</span>
+    <span>個人のGoogleアカウントではログインできません。学校から配付されたアカウントをお使いください。</span>
+  </div>
+
+  <div class="error-msg" id="loginError" role="alert" aria-live="assertive">
+    <span id="loginErrorText"></span>
+  </div>
+</div>
 
     <!-- ② 待機列画面 -->
     <div class="section" id="waitingSection" role="region" aria-label="待機列">
       <div class="waiting-wrap">
-        <div class="waiting-icon" aria-hidden="true">⏳</div>
         <h2>ただいま待機列でお待ちください</h2>
         <p>
           現在、申請が集中しているため、順番にご案内しています。<br>
@@ -1018,21 +1028,30 @@
             <span class="required-badge" aria-label="必須">必須</span>
           </legend>
           <div class="time-options" role="radiogroup" aria-label="入場時間帯を選択">
-            <div class="time-option" id="opt-am" role="radio" aria-checked="false" tabindex="0"
-                 onclick="selectTime('am')" onkeydown="if(event.key==='Enter'||event.key===' ')selectTime('am')">
-              <div class="time-label">一部（11:00~12:50）</div>
+            <div class="time-option" id="opt-a" role="radio" aria-checked="false" tabindex="0"
+                 onclick="selectTime('a')" onkeydown="if(event.key==='Enter'||event.key===' ')selectTime('a')">
+              <div class="time-label">Aパート（9:40）</div>
               <div class="capacity-bar" aria-hidden="true">
-                <div class="capacity-fill" id="fill-am" style="width:0%"></div>
+                <div class="capacity-fill" id="fill-a" style="width:0%"></div>
               </div>
-              <div class="remaining" id="remaining-am" aria-live="polite">—</div>
+              <div class="remaining" id="remaining-a" aria-live="polite">—</div>
+              <div class="time-note">※ステージ部門参加生徒の関係者のみ選択可</div>
             </div>
-            <div class="time-option" id="opt-pm" role="radio" aria-checked="false" tabindex="0"
-                 onclick="selectTime('pm')" onkeydown="if(event.key==='Enter'||event.key===' ')selectTime('pm')">
-              <div class="time-label">二部（13:00~14:50）</div>
+            <div class="time-option" id="opt-b" role="radio" aria-checked="false" tabindex="0"
+                 onclick="selectTime('b')" onkeydown="if(event.key==='Enter'||event.key===' ')selectTime('b')">
+              <div class="time-label">Bパート（11:00）</div>
               <div class="capacity-bar" aria-hidden="true">
-                <div class="capacity-fill" id="fill-pm" style="width:0%"></div>
+                <div class="capacity-fill" id="fill-b" style="width:0%"></div>
               </div>
-              <div class="remaining" id="remaining-pm" aria-live="polite">—</div>
+              <div class="remaining" id="remaining-b" aria-live="polite">—</div>
+            </div>
+            <div class="time-option" id="opt-c" role="radio" aria-checked="false" tabindex="0"
+                 onclick="selectTime('c')" onkeydown="if(event.key==='Enter'||event.key===' ')selectTime('c')">
+              <div class="time-label">Cパート（13:00）</div>
+              <div class="capacity-bar" aria-hidden="true">
+                <div class="capacity-fill" id="fill-c" style="width:0%"></div>
+              </div>
+              <div class="remaining" id="remaining-c" aria-live="polite">—</div>
             </div>
           </div>
         </fieldset>
@@ -1076,20 +1095,53 @@
       </div>
     </div>
 
-  </div><!-- /card-body -->
+   </div><!-- /card-body -->
 </div><!-- /card -->
 
 <script>
-  // ポップアップを閉じる関数
-  function closePopup() {
-    const popup = document.getElementById("testPopup");
-    if (popup) {
-      popup.style.display = "none";
+  // Google Sign-In コールバック
+  window.handleCredential = handleCredential;
+
+  const APPLICATION_START_AT = new Date("2026-09-25T16:30:00+09:00");
+  const APPLICATION_START_LABEL =
+    "9月25日午後16時30分";
+
+  function showLoginBlockedState() {
+    const intro = document.getElementById("loginIntro");
+    const divider = document.getElementById("loginDivider");
+    const googleWrap = document.getElementById("googleBtnWrap");
+    const infoBox = document.getElementById("loginInfoBox");
+    const error = document.getElementById("loginError");
+
+    intro.innerHTML = `
+      <h2>申請開始前です</h2>
+      <p>申請開始は${APPLICATION_START_LABEL}からです。<br>開始時刻になったら、この画面を再読み込みしてください。</p>
+    `;
+
+    if (divider) divider.style.display = "none";
+    if (googleWrap) googleWrap.style.display = "none";
+    if (infoBox) infoBox.style.display = "none";
+    if (error) error.style.display = "none";
+
+    // 開始時刻になったら自動で再読込
+    const waitMs = APPLICATION_START_AT.getTime() - Date.now();
+    if (waitMs > 0) {
+      setTimeout(() => {
+        window.location.reload();
+      }, waitMs + 1000);
     }
   }
 
-  // 背景クリックで閉じる処理
+  function isApplicationOpenNow() {
+    return new Date() >= APPLICATION_START_AT;
+  }
+
   document.addEventListener("DOMContentLoaded", function() {
+    if (!isApplicationOpenNow()) {
+      showLoginBlockedState();
+      return;
+    }
+
     const popup = document.getElementById("testPopup");
     if (popup) {
       popup.addEventListener("click", function(e) {
@@ -1098,11 +1150,25 @@
         }
       });
     }
+
+    // Google Sign-In ボタンの再レンダリング
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      google.accounts.id.renderButton(
+        document.querySelector('.g_id_signin'),
+        { theme: 'outline', size: 'large' }
+      );
+    }
   });
 
   const GAS_URL = "https://script.google.com/macros/s/AKfycbxdMLfj6qHITIEInB52DC1DJqojKlb-dWb43AoqMchlkCFyuqRpZtqB_0u6vcFydGw/exec";
   const ALLOWED_DOMAIN = "g.bears.ed.jp";
   const CAPACITY = 1000;
+  const TIME_PARTS = ["a", "b", "c"];
+  const TIME_LABELS = {
+    a: "Aパート（9:40）",
+    b: "Bパート（11:00）",
+    c: "Cパート（13:00）"
+  };
 
   let userEmail = "";
   let selectedTime = "";
@@ -1253,7 +1319,7 @@
         .then(data => {
           if (data.exists) {
             // 申請済みの場合は待機列に入らない
-            const timeLabel = data.time === "am" ? "午前の部" : "午後の部";
+            const timeLabel = TIME_LABELS[data.time] || data.time;
             document.getElementById("alreadyTime").textContent = timeLabel;
             document.getElementById("alreadyCount").textContent = data.count + "枚";
             const statusEl = document.getElementById("alreadyStatus");
@@ -1286,31 +1352,36 @@
   }
 
   /* ===== 申請セッション作成 ===== */
-  function startApplicationSession() {
-    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+function startApplicationSession() {
+  fetch(GAS_URL + "?mode=get_or_create_session&email=" + encodeURIComponent(userEmail))
+    .then(res => res.json())
+    .then(data => {
+      handleSessionCreated(data);
+    })
+    .catch(err => {
       hideLoading();
-      showError('loginError', 'セッション管理に接続できません。申請ページをGASから開いてください。');
-      return;
-    }
-
-    google.script.run
-      .withSuccessHandler(handleSessionCreated)
-      .withFailureHandler(function(err) {
-        hideLoading();
-        console.error('getOrCreateSession failed:', err);
-        showError('loginError', '申請状況の確認中にエラーが発生しました。もう一度お試しください。');
-      })
-      .getOrCreateSession(userEmail);
-  }
-
+      console.error('getOrCreateSession failed:', err);
+      showError('loginError', '申請状況の確認中にエラーが発生しました。もう一度お試しください。');
+    });
+}
   /* ===== セッション作成結果 ===== */
   function handleSessionCreated(data) {
-    hideLoading();
-
     if (!data) {
+      hideLoading();
       showError('loginError', '申請状況を確認できませんでした。もう一度お試しください。');
       return;
     }
+
+    // 【修正】サーバーが混雑中で一時的にロックを取得できなかった場合（isBusy）は
+    // エラーではないので、ログイン画面のエラー表示は出さず自動的に再試行する。
+    // これによりログイン画面に戻されることなく、裏側で待機列への接続を続ける。
+    if (data.isBusy) {
+      showLoading('アクセスが集中しています。自動的に再試行しています...');
+      setTimeout(startApplicationSession, 2000);
+      return;
+    }
+
+    hideLoading();
 
     if (data.error) {
       showError('loginError', data.error);
@@ -1348,43 +1419,51 @@
     }
   }
 
-  function checkWaitingStatus() {
-    if (!sessionId) return;
+  /* ===== 待機列ポーリング（fetchへ変更） ===== */
+function checkWaitingStatus() {
+  if (!sessionId) return;
 
-    google.script.run
-      .withSuccessHandler(function(data) {
-        if (!data) return;
+  fetch(GAS_URL + "?mode=check_session_status&sessionId=" + encodeURIComponent(sessionId))
+    .then(res => res.json())
+    .then(data => {
+      if (!data) return;
 
-        if (data.error) {
-          stopWaitingPolling();
-          showError('loginError', data.error);
-          setStep(1);
-          showSection('loginSection');
-          return;
-        }
-
-        if (data.canProceed) {
-          stopWaitingPolling();
-          document.getElementById('waitingStatus').textContent =
-            '順番になりました。申請画面へ移動します...';
-
-          // 少しだけ案内を見せてからフォームへ
-          setTimeout(function() {
-            setStep(3);
-            showSection('formSection');
-          }, 500);
-          return;
-        }
-
-        updateWaitingDisplay(data.position, data.estimatedWaitTime);
-      })
-      .withFailureHandler(function(err) {
-        console.warn('checkSessionStatus failed:', err);
+      // 【修正】混雑によりサーバー側がロックを取得できなかっただけの場合（isBusy）は
+      // 待機列から脱落させず、現在の順番表示を維持したまま次のポーリングを待つ。
+      if (data.isBusy) {
         document.getElementById('waitingStatus').textContent =
-          '接続を確認しています...';
-      })
-      .checkSessionStatus(sessionId);
-  }
+          '混雑のため確認を再試行しています...';
+        return;
+      }
+
+      if (data.error) {
+        stopWaitingPolling();
+        showError('loginError', data.error);
+        setStep(1);
+        showSection('loginSection');
+        return;
+      }
+
+      if (data.canProceed) {
+        stopWaitingPolling();
+        document.getElementById('waitingStatus').textContent =
+          '順番になりました。申請画面へ移動します...';
+
+        setTimeout(function() {
+          setStep(3);
+          showSection('formSection');
+        }, 500);
+        return;
+      }
+
+      updateWaitingDisplay(data.position, data.estimatedWaitTime);
+    })
+    .catch(err => {
+      console.warn('checkSessionStatus failed:', err);
+      document.getElementById('waitingStatus').textContent =
+        '接続を確認しています...';
+    });
+}
 
   function updateWaitingDisplay(position, estimatedWaitTime) {
     const positionEl = document.getElementById('waitingPosition');
@@ -1419,9 +1498,8 @@
     return fetch(GAS_URL + "?mode=remaining")
       .then(res => res.json())
       .then(data => {
-        // data は { am: <usedCount>, pm: <usedCount> } の想定
-        updateOption("am", data.am);
-        updateOption("pm", data.pm);
+        // data は { a: <usedCount>, b: <usedCount>, c: <usedCount> } の想定
+        TIME_PARTS.forEach(t => updateOption(t, data[t]));
         // 初回読み込み後はローディングを消す（複数の showLoading を考慮）
         hideLoading();
       })
@@ -1493,7 +1571,7 @@
     if (opt.classList.contains("full")) return;
 
     selectedTime = time;
-    ["am", "pm"].forEach(t => {
+    TIME_PARTS.forEach(t => {
       const el = document.getElementById("opt-" + t);
       el.classList.remove("selected");
       el.setAttribute('aria-checked', 'false');
@@ -1530,6 +1608,29 @@
   let isSubmitting = false;
 
   /* ===== 申請送信（送信前に最新残席を確認） ===== */
+  // ===== 申請中の排他制御（自動リトライ）まわりの設定 =====
+  const SUBMIT_MAX_RETRIES = 8;       // 「busy」時に自動で再試行する最大回数
+  const SUBMIT_RETRY_DELAY_MS = 2000; // 再試行までの待機時間（ミリ秒）
+  const SUBMIT_PROCESSING_MSG =
+    '申請処理中です。画面を閉じたりリロードしたりせず、そのままお待ちください。';
+
+  // 申請処理中にページを離れよう（リロード・タブを閉じる等）とした場合に警告を出す
+  function beforeUnloadDuringSubmit(e) {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+
+  // 送信ボタン・状態を通常表示に戻す（成功して次の画面に進む場合は呼ばない）
+  function resetSubmitButton() {
+    const btn = document.getElementById("submitBtn");
+    const labelEl = document.getElementById("submitLabel");
+    isSubmitting = false;
+    window.removeEventListener('beforeunload', beforeUnloadDuringSubmit);
+    btn.disabled = false;
+    labelEl.textContent = '申請する';
+  }
+
   async function submitForm() {
     if (isSubmitting) return; // すでに送信中なら無視
     const name = document.getElementById("name").value.trim();
@@ -1547,76 +1648,99 @@
     isSubmitting = true;
     btn.disabled = true;
     labelEl.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span> 送信中...';
+    window.addEventListener('beforeunload', beforeUnloadDuringSubmit);
 
     // 送信直前に最新の残席をチェック（競合回避）
     try {
       const res = await fetch(GAS_URL + "?mode=remaining");
       const data = await res.json();
-      const used = selectedTime === 'am' ? data.am : data.pm;
+      const used = data[selectedTime];
       const remaining = CAPACITY - used;
 
       if (remaining <= 0) {
         showError('formError', '選択した時間帯が満員になりました。別の時間帯を選択してください。');
         // UI 更新
         await loadRemaining();
-        isSubmitting = false;
-        btn.disabled = false;
-        labelEl.textContent = '申請する';
+        resetSubmitButton();
         return;
       }
       if (remaining < count) {
-        showError('formError', '選択した時間帯の残り枚数が不足しています。枚数を減らすか、もう一方の時間帯を選択してください。');
+        showError('formError', '選択した時間帯の残り枚数が不足しています。枚数を減らすか、他の時間帯を選択してください。');
         await loadRemaining();
-        isSubmitting = false;
-        btn.disabled = false;
-        labelEl.textContent = '申請する';
+        resetSubmitButton();
         return;
       }
     } catch (err) {
       showError('formError', '通信エラーが発生しました。インターネット接続を確認してください。');
-      isSubmitting = false;
-      btn.disabled = false;
-      labelEl.textContent = '申請する';
+      resetSubmitButton();
       return;
     }
 
     const submitMode = isEdit ? "edit" : "submit";
-    fetch(GAS_URL + "?mode=" + submitMode
+    const submitUrl = GAS_URL + "?mode=" + submitMode
         + "&email=" + encodeURIComponent(userEmail)
         + "&name=" + encodeURIComponent(name)
         + "&time=" + selectedTime
-        + "&count=" + count)
+        + "&count=" + count
+        + "&sessionId=" + encodeURIComponent(sessionId);
+
+    // 申請中オーバーレイ（ローディングバー＋案内文言）を表示してから送信開始
+    showLoading(SUBMIT_PROCESSING_MSG);
+    sendSubmission(submitUrl, 0);
+  }
+
+  // スプレッドシートへの記録が「他の人の申請処理中」で弾かれた（status: "busy"）場合、
+  // エラーにせず自動的に少し待ってから再送信する。ユーザーがボタンを押し直す必要はない。
+  function sendSubmission(url, attempt) {
+    fetch(url)
       .then(res => res.json())
       .then(data => {
         if (data.status === "ok") {
+          hideLoading(true);
           // 送信成功時はポーリングを止めても良い（完了画面へ）
           stopPolling();
           stopWaitingPolling();
+          window.removeEventListener('beforeunload', beforeUnloadDuringSubmit);
+          isSubmitting = false;
           setStep(4);
           showSection('successSection');
-        } else if (data.status === "full") {
-          showError('formError', '選択した時間帯が満員になりました。もう一方の時間帯をお試しください。');
-          loadRemaining();
-          isSubmitting = false;
-          btn.disabled = false;
-          labelEl.textContent = '申請する';
         } else if (data.status === "busy") {
-          showError('formError', '現在アクセスが集中しています。恐れ入りますが、もう一度「申請する」ボタンを押してください。');
-          isSubmitting = false;
-          btn.disabled = false;
-          labelEl.textContent = '申請する';
+          if (attempt < SUBMIT_MAX_RETRIES) {
+            const loadingTextEl = document.getElementById('loadingText');
+            if (loadingTextEl) {
+              loadingTextEl.textContent =
+                '現在、他の方の申請を記録中です。自動的に再試行しています…（' + (attempt + 1) + '回目）';
+            }
+            setTimeout(() => sendSubmission(url, attempt + 1), SUBMIT_RETRY_DELAY_MS);
+          } else {
+            hideLoading(true);
+            showError('formError', '現在アクセスが集中しています。恐れ入りますが、もう一度「申請する」ボタンを押してください。');
+            resetSubmitButton();
+          }
+        } else if (data.status === "full") {
+          hideLoading(true);
+          showError('formError', '選択した時間帯が満員になりました。他の時間帯をお試しください。');
+          loadRemaining();
+          resetSubmitButton();
         } else {
+          hideLoading(true);
           showError('formError', 'エラーが発生しました。もう一度お試しください。');
-          isSubmitting = false;
-          btn.disabled = false;
-          labelEl.textContent = '申請する';
+          resetSubmitButton();
         }
       })
       .catch(() => {
-        showError('formError', '通信エラーが発生しました。インターネット接続を確認してください。');
-        isSubmitting = false;
-        btn.disabled = false;
-        labelEl.textContent = '申請する';
+        if (attempt < SUBMIT_MAX_RETRIES) {
+          const loadingTextEl = document.getElementById('loadingText');
+          if (loadingTextEl) {
+            loadingTextEl.textContent =
+              '通信が不安定です。自動的に再試行しています…（' + (attempt + 1) + '回目）';
+          }
+          setTimeout(() => sendSubmission(url, attempt + 1), SUBMIT_RETRY_DELAY_MS);
+        } else {
+          hideLoading(true);
+          showError('formError', '通信エラーが発生しました。インターネット接続を確認してください。');
+          resetSubmitButton();
+        }
       });
   }
 </script>
