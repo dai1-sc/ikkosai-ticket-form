@@ -414,11 +414,148 @@ footer {
   max-width: 100%;
 }
 
-.status-ok { --magsafe-color: #22c55e; } /* Face IDの明るいグリーン */
+.status-ok { --magsafe-color: #29d892; --ci-soft: #c4efdf; } /* チェックアニメーションの緑 */
 .status-exit { --magsafe-color: var(--exit-color); }
-.status-reentry { --magsafe-color: var(--reentry-color); }
+.status-reentry { --magsafe-color: var(--reentry-color); --ci-soft: #c4d5fa; }
 .status-error { --magsafe-color: var(--error-color); }
 .status-warning { --magsafe-color: var(--exit-color); }
+
+/* =========================================================
+   完了チェックマーク アニメーション（初回入場・再入場）
+   GIFを1コマずつ計測した値をキーフレーム化したもの。
+   viewBox 1200x1200 上の円は、点(600,604.4)を基準に拡大縮小する。
+   ========================================================= */
+.ci-svg {
+  display: block;
+  width: 110px;   /* 円の直径が従来のアイコン(76px)と同じ大きさになるサイズ */
+  height: 110px;
+  margin: -17px 0; /* 拡大するハロー分の余白を、レイアウトに影響させない */
+}
+.ci-soft, .ci-main {
+  transform-origin: 600px 604.4px;
+  transform: scale(0);
+}
+.ci-soft { fill: var(--ci-soft); }
+.ci-main { fill: var(--magsafe-color); }
+.ci-check {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 70.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 520;
+  stroke-dashoffset: 520;
+  opacity: 0;
+}
+/* SVGが挿入された瞬間に再生開始。終了後は完成形を保持するので、
+   オーバーレイのフェードアウト中もチェックが消えない */
+.ci-soft  { animation: ci-soft 1840ms linear both; }
+.ci-main  { animation: ci-main 1840ms linear both; }
+.ci-check { animation: ci-check 1840ms linear both; }
+
+@keyframes ci-soft {
+  0% { transform: scale(0); opacity: 1; }
+  1.848% { transform: scale(0.0653); }
+  4.022% { transform: scale(0.1406); }
+  5.652% { transform: scale(0.2314); }
+  7.283% { transform: scale(0.3501); }
+  9.457% { transform: scale(0.5189); }
+  11.087% { transform: scale(0.7024); }
+  12.717% { transform: scale(0.8042); }
+  14.891% { transform: scale(0.8606); }
+  16.522% { transform: scale(0.8969); }
+  18.152% { transform: scale(0.9222); }
+  20.326% { transform: scale(0.9405); }
+  21.957% { transform: scale(0.9545); }
+  23.587% { transform: scale(0.9651); }
+  25.761% { transform: scale(0.9733); }
+  27.391% { transform: scale(0.9793); }
+  29.022% { transform: scale(0.9839); }
+  31.196% { transform: scale(0.987); }
+  32.826% { transform: scale(0.9892); }
+  34.457% { transform: scale(0.9901); }
+  36.63% { transform: scale(0.9911); }
+  38.261% { transform: scale(0.9935); }
+  39.891% { transform: scale(0.9957); }
+  42.065% { transform: scale(0.9974); }
+  43.696% { transform: scale(0.9988); }
+  45.326% { transform: scale(1); }
+  61.63% { transform: scale(1); }
+  63.804% { transform: scale(1.0079); }
+  65.435% { transform: scale(1.0226); }
+  67.065% { transform: scale(1.039); opacity: 1; }
+  69.239% { transform: scale(1.0566); }
+  70.87% { transform: scale(1.0751); }
+  72.5% { transform: scale(1.0941); opacity: 0.98; }
+  74.674% { transform: scale(1.1137); opacity: 0.9; }
+  76.304% { transform: scale(1.1334); opacity: 0.87; }
+  77.935% { transform: scale(1.1534); opacity: 0.85; }
+  80.109% { transform: scale(1.1736); opacity: 0.83; }
+  81.739% { transform: scale(1.1938); opacity: 0.78; }
+  83.37% { transform: scale(1.2138); opacity: 0.73; }
+  85.543% { transform: scale(1.2338); opacity: 0.65; }
+  87.174% { transform: scale(1.2538); opacity: 0.59; }
+  88.804% { transform: scale(1.2733); opacity: 0.48; }
+  90.978% { transform: scale(1.2921); opacity: 0.34; }
+  92.609% { transform: scale(1.3101); opacity: 0.21; }
+  94.239% { transform: scale(1.3272); opacity: 0.12; }
+  96.413% { transform: scale(1.3424); opacity: 0.06; }
+  98.043% { transform: scale(1.3544); opacity: 0.025; }
+  99.674% { transform: scale(1.3641); opacity: 0; }
+  100% { transform: scale(1.3629); opacity: 0; }
+}
+@keyframes ci-main {
+  0% { transform: scale(0); }
+  9.457% { transform: scale(0); }
+  11.087% { transform: scale(0.0687); }
+  12.717% { transform: scale(0.142); }
+  14.891% { transform: scale(0.2217); }
+  16.522% { transform: scale(0.3107); }
+  18.152% { transform: scale(0.4141); }
+  20.326% { transform: scale(0.544); }
+  21.957% { transform: scale(0.7349); }
+  23.587% { transform: scale(0.8838); }
+  25.761% { transform: scale(0.9308); }
+  27.391% { transform: scale(0.9535); }
+  29.022% { transform: scale(0.9672); }
+  31.196% { transform: scale(0.9761); }
+  32.826% { transform: scale(0.9826); }
+  34.457% { transform: scale(0.9875); }
+  36.63% { transform: scale(0.9908); }
+  38.261% { transform: scale(0.9935); }
+  39.891% { transform: scale(0.9957); }
+  42.065% { transform: scale(0.9973); }
+  43.696% { transform: scale(0.9988); }
+  45.326% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+@keyframes ci-check {
+  0% { opacity: 0; stroke-dashoffset: 520; }
+  47.446% { opacity: 0; }
+  47.5% { opacity: 1; stroke-dashoffset: 516.5; }
+  49.13% { stroke-dashoffset: 510; }
+  50.761% { stroke-dashoffset: 500.5; }
+  52.935% { stroke-dashoffset: 486.5; }
+  54.565% { stroke-dashoffset: 468.5; }
+  56.196% { stroke-dashoffset: 443.5; }
+  58.37% { stroke-dashoffset: 409.5; }
+  60% { stroke-dashoffset: 361; }
+  61.63% { stroke-dashoffset: 287.5; }
+  63.804% { stroke-dashoffset: 157.5; }
+  65.435% { stroke-dashoffset: 37.5; }
+  67.065% { stroke-dashoffset: 4.5; }
+  69.239% { stroke-dashoffset: 1.6; }
+  100% { opacity: 1; stroke-dashoffset: 1.6; }
+}
+
+/* 「視差効果を減らす」設定の端末では、動かさず完成形だけを表示 */
+@media (prefers-reduced-motion: reduce) {
+  .ci-soft, .ci-main, .ci-check { animation: none; }
+  .ci-soft { display: none; }
+  .ci-main { transform: none; }
+  .ci-check { opacity: 1; stroke-dashoffset: 0; }
+}
+
 </style>
 </head>
 <body>
@@ -873,9 +1010,10 @@ function triggerMagsafe(statusClass, text, soundType, subText = "") {
   let svgContent = "";
   if (statusClass === "ok" || statusClass === "reentry") {
     svgContent = `
-      <svg class="faceid-svg" viewBox="0 0 100 100">
-        <circle class="faceid-circle" cx="50" cy="50" r="42"></circle>
-        <polyline class="faceid-check" points="31 52 44 65 69 38"></polyline>
+      <svg class="ci-svg" viewBox="0 0 1200 1200" aria-hidden="true">
+        <circle class="ci-soft" cx="600" cy="593.8" r="415.3"></circle>
+        <circle class="ci-main" cx="600" cy="593.8" r="414.9"></circle>
+        <path class="ci-check" d="M406.9 610.9 L527.3 728.6 L770.9 477.4"></path>
       </svg>`;
   } else if (statusClass === "exit") {
     svgContent = `
