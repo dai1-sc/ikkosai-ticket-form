@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>校内リアルタイム混雑状況 | 第一高校生徒会</title>
+  <title>校内リアルタイム入室状況 | 第一高校生徒会</title>
   <style>
     * {
       box-sizing: border-box;
@@ -72,57 +72,77 @@
     }
 
     /* --------------------------------------------------
-       シンプルで視認性の高いクラスバッジ
+       整理券番号バッジ（大きく・番号を主役に）
     -------------------------------------------------- */
     .class-card {
       position: absolute;
       transform: translate(-50%, -50%);
-      width: 6.8%;
-      padding: 0.4% 0.2%;
-      border-radius: 4px;
+      width: 8.2%;
+      padding: 0.7% 0.3% 0.6%;
+      border-radius: 6px;
       text-align: center;
       background: #ffffff;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
       border: 1px solid #cbd5e1;
-      border-left: 5px solid #94a3b8; /* デフォルトの左端カラーバー */
+      border-left: 8px solid #94a3b8; /* まだ入室なし: グレー */
       transition: border-color 0.3s ease;
     }
 
-    .wait-time {
-      font-size: clamp(10px, 1.1vw, 20px);
+    /* 入室が始まっているクラス */
+    .class-card.active-number {
+      border-left-color: #10b981;
+    }
+
+    .card-caption {
+      font-size: clamp(8px, 0.75vw, 14px);
       font-weight: 700;
+      color: #64748b;
       line-height: 1.2;
+      letter-spacing: 0.05em;
       white-space: nowrap;
+    }
+
+    .number-line {
+      display: flex;
+      justify-content: center;
+      align-items: baseline;
+      gap: 0.2em;
+      line-height: 1;
+      white-space: nowrap;
+      margin-top: 2%;
+    }
+
+    .ticket-number {
+      font-size: clamp(26px, 3.6vw, 80px);
+      font-weight: 900;
+      line-height: 1;
       color: #0f172a;
+      font-variant-numeric: tabular-nums;
     }
 
-    /* 混雑状況：左端のカラーバーと文字で洗練された区別 */
-    .status-smooth {
-      border-left-color: #10b981; /* グリーン */
+    .ticket-unit {
+      font-size: clamp(9px, 0.9vw, 18px);
+      font-weight: 700;
+      color: #475569;
     }
 
-    .status-busy {
-      border-left-color: #f59e0b; /* アンバー */
+    /* 入室前（0番） */
+    .class-card.no-entry .ticket-number {
+      color: #94a3b8;
+    }
+    .class-card.no-entry .ticket-unit {
+      display: none;
     }
 
-    .status-crowded {
-      border-left-color: #ef4444; /* レッド */
-    }
-
-    .status-crowded .wait-time {
-      color: #dc2626;
-    }
-
-    /* 調整済みの1階・2階精密座標 */
-    #card-1-1, #card-2-1 { top: 39.5%; left: 10.6%; }
-    #card-1-2, #card-2-2 { top: 39.5%; left: 19.5%; }
-    #card-1-3, #card-2-3 { top: 39.5%; left: 32.8%; }
-    #card-1-4, #card-2-4 { top: 39.5%; left: 41.3%; }
-    #card-1-5, #card-2-5 { top: 39.5%; left: 50.0%; }
-    #card-1-6, #card-2-6 { top: 39.5%; left: 58.6%; }
-    #card-1-7, #card-2-7 { top: 39.5%; left: 67.3%; }
-    #card-1-8, #card-2-8 { top: 39.5%; left: 75.8%; }
-    #card-1-9, #card-2-9 { top: 39.5%; left: 89.3%; }
+    /* 整理券番号を表示するクラスの精密座標（1階・2階） */
+    #card-2-1 { top: 39.5%; left: 10.6%; }
+    #card-1-2 { top: 39.5%; left: 19.5%; }
+    #card-2-3 { top: 39.5%; left: 32.8%; }
+    #card-2-5 { top: 39.5%; left: 50.0%; }
+    #card-1-6 { top: 39.5%; left: 58.6%; }
+    #card-1-7 { top: 39.5%; left: 67.3%; }
+    #card-2-7 { top: 39.5%; left: 67.3%; }
+    #card-2-9 { top: 39.5%; left: 89.3%; }
 
     /* --------------------------------------------------
        現在地ピン（シンプル＆プロフェッショナル）
@@ -189,41 +209,31 @@
 <body>
 
   <div class="slide-container">
-    <!-- 1階表示 -->
+    <!-- 1階表示（整理券番号を表示するのは 1-2 / 1-6 / 1-7 のみ） -->
     <div id="view-1f" class="floor-view active">
       <div class="map-container">
         <!-- 現在地表示 (1階) -->
         <div id="pin-1f-left" class="current-location-pin pin-left"><span class="pin-dot"></span>現在地</div>
         <div id="pin-1f-right" class="current-location-pin pin-right"><span class="pin-dot"></span>現在地</div>
 
-        <div id="card-1-1" class="class-card"><div class="wait-time" id="time-1-1">---</div></div>
-        <div id="card-1-2" class="class-card"><div class="wait-time" id="time-1-2">---</div></div>
-        <div id="card-1-3" class="class-card"><div class="wait-time" id="time-1-3">---</div></div>
-        <div id="card-1-4" class="class-card"><div class="wait-time" id="time-1-4">---</div></div>
-        <div id="card-1-5" class="class-card"><div class="wait-time" id="time-1-5">---</div></div>
-        <div id="card-1-6" class="class-card"><div class="wait-time" id="time-1-6">---</div></div>
-        <div id="card-1-7" class="class-card"><div class="wait-time" id="time-1-7">---</div></div>
-        <div id="card-1-8" class="class-card"><div class="wait-time" id="time-1-8">---</div></div>
-        <div id="card-1-9" class="class-card"><div class="wait-time" id="time-1-9">---</div></div>
+        <div id="card-1-2" class="class-card no-entry"><div class="card-caption">入室中</div><div class="number-line"><span class="ticket-number" id="num-1-2">-</span><span class="ticket-unit">番</span></div></div>
+        <div id="card-1-6" class="class-card no-entry"><div class="card-caption">入室中</div><div class="number-line"><span class="ticket-number" id="num-1-6">-</span><span class="ticket-unit">番</span></div></div>
+        <div id="card-1-7" class="class-card no-entry"><div class="card-caption">入室中</div><div class="number-line"><span class="ticket-number" id="num-1-7">-</span><span class="ticket-unit">番</span></div></div>
       </div>
     </div>
 
-    <!-- 2階表示 -->
+    <!-- 2階表示（整理券番号を表示するのは 2-1 / 2-3 / 2-5 / 2-7 / 2-9 のみ） -->
     <div id="view-2f" class="floor-view">
       <div class="map-container">
         <!-- 現在地表示 (2階) -->
         <div id="pin-2f-left" class="current-location-pin pin-left"><span class="pin-dot"></span>現在地</div>
         <div id="pin-2f-right" class="current-location-pin pin-right"><span class="pin-dot"></span>現在地</div>
 
-        <div id="card-2-1" class="class-card"><div class="wait-time" id="time-2-1">---</div></div>
-        <div id="card-2-2" class="class-card"><div class="wait-time" id="time-2-2">---</div></div>
-        <div id="card-2-3" class="class-card"><div class="wait-time" id="time-2-3">---</div></div>
-        <div id="card-2-4" class="class-card"><div class="wait-time" id="time-2-4">---</div></div>
-        <div id="card-2-5" class="class-card"><div class="wait-time" id="time-2-5">---</div></div>
-        <div id="card-2-6" class="class-card"><div class="wait-time" id="time-2-6">---</div></div>
-        <div id="card-2-7" class="class-card"><div class="wait-time" id="time-2-7">---</div></div>
-        <div id="card-2-8" class="class-card"><div class="wait-time" id="time-2-8">---</div></div>
-        <div id="card-2-9" class="class-card"><div class="wait-time" id="time-2-9">---</div></div>
+        <div id="card-2-1" class="class-card no-entry"><div class="card-caption">入室中</div><div class="number-line"><span class="ticket-number" id="num-2-1">-</span><span class="ticket-unit">番</span></div></div>
+        <div id="card-2-3" class="class-card no-entry"><div class="card-caption">入室中</div><div class="number-line"><span class="ticket-number" id="num-2-3">-</span><span class="ticket-unit">番</span></div></div>
+        <div id="card-2-5" class="class-card no-entry"><div class="card-caption">入室中</div><div class="number-line"><span class="ticket-number" id="num-2-5">-</span><span class="ticket-unit">番</span></div></div>
+        <div id="card-2-7" class="class-card no-entry"><div class="card-caption">入室中</div><div class="number-line"><span class="ticket-number" id="num-2-7">-</span><span class="ticket-unit">番</span></div></div>
+        <div id="card-2-9" class="class-card no-entry"><div class="card-caption">入室中</div><div class="number-line"><span class="ticket-number" id="num-2-9">-</span><span class="ticket-unit">番</span></div></div>
       </div>
     </div>
   </div>
@@ -264,7 +274,7 @@
       is1FVisible = !is1FVisible;
     }
 
-    async function fetchWaitTimes() {
+    async function fetchEntryNumbers() {
       if (GAS_URL === 'YOUR_GAS_DEPLOY_URL_HERE') {
         document.getElementById('last-updated').textContent = 'GAS_URL未設定';
         return;
@@ -276,19 +286,19 @@
 
         if (data.status === 'success' && data.classes) {
           data.classes.forEach(item => {
-            const timeEl = document.getElementById(`time-${item.className}`);
+            // 整理券番号を表示しないクラスはHTML上に要素が無いので自動的にスキップされる
+            const numEl = document.getElementById(`num-${item.className}`);
             const cardEl = document.getElementById(`card-${item.className}`);
 
-            if (timeEl && cardEl) {
-              timeEl.textContent = item.statusText;
-
-              cardEl.classList.remove('status-smooth', 'status-busy', 'status-crowded');
-              if (item.groups === 0) {
-                cardEl.classList.add('status-smooth');
-              } else if (item.groups <= 3) {
-                cardEl.classList.add('status-busy');
+            if (numEl && cardEl) {
+              const n = Number(item.currentNumber) || 0;
+              cardEl.classList.remove('active-number', 'no-entry');
+              if (n === 0) {
+                numEl.textContent = '-';
+                cardEl.classList.add('no-entry');
               } else {
-                cardEl.classList.add('status-crowded');
+                numEl.textContent = n;
+                cardEl.classList.add('active-number');
               }
             }
           });
@@ -305,9 +315,9 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       setupCurrentLocationPin();
-      fetchWaitTimes();
+      fetchEntryNumbers();
       setInterval(toggleFloors, TOGGLE_INTERVAL);
-      setInterval(fetchWaitTimes, FETCH_INTERVAL);
+      setInterval(fetchEntryNumbers, FETCH_INTERVAL);
     });
   </script>
 </body>
