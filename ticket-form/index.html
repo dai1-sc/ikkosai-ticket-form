@@ -1171,18 +1171,25 @@
   });
 
   const GAS_URL = "https://script.google.com/macros/s/AKfycbxdMLfj6qHITIEInB52DC1DJqojKlb-dWb43AoqMchlkCFyuqRpZtqB_0u6vcFydGw/exec";
-  const ALLOWED_DOMAIN = "g.bears.ed.jp";
-  const CAPACITY = 1000;
-  const TIME_PARTS = ["a", "b", "c"];
-  const TIME_LABELS = {
-    a: "Aパート（9:40）",
-    b: "Bパート（11:00）",
-    c: "Cパート（13:00）"
-  };
+const ALLOWED_DOMAIN = "g.bears.ed.jp";
 
-  let userEmail = "";
-  let selectedTime = "";
-  let isEdit = false;
+// パートごとの定員を設定
+const CAPACITY = {
+  a: 500,
+  b: 800,
+  c: 800
+};
+
+const TIME_PARTS = ["a", "b", "c"];
+const TIME_LABELS = {
+  a: "Aパート（9:40）",
+  b: "Bパート（11:00）",
+  c: "Cパート（13:00）"
+};
+
+let userEmail = "";
+let selectedTime = "";
+let isEdit = false;
 
   // セッション（待機列）管理
   let sessionId = "";
@@ -1665,7 +1672,9 @@ function checkWaitingStatus() {
       const res = await fetch(GAS_URL + "?mode=remaining");
       const data = await res.json();
       const used = data[selectedTime];
-      const remaining = CAPACITY - used;
+      
+      // CAPACITY[selectedTime] とすることで、"a"なら500、"b"なら800が取得できます
+      const remaining = CAPACITY[selectedTime] - used;
 
       if (remaining <= 0) {
         showError('formError', '選択した時間帯が満員になりました。別の時間帯を選択してください。');
