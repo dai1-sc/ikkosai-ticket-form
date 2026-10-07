@@ -1528,11 +1528,18 @@ function checkWaitingStatus() {
   }
 
   function updateOption(time, count) {
-    const remaining = CAPACITY - count;
+    // 時間帯ごとの上限数を取得 (a:500, b:800, c:800)
+    const maxCap = CAPACITY[time];
+    
+    // 【修正点1】 CAPACITY -> maxCap (CAPACITY[time]) に変更
+    const remaining = maxCap - count;
+    
     const remEl = document.getElementById("remaining-" + time);
     const fillEl = document.getElementById("fill-" + time);
     const opt = document.getElementById("opt-" + time);
-    const usedPct = Math.min((count / CAPACITY) * 100, 100);
+    
+    // 【修正点2】 CAPACITY -> maxCap (CAPACITY[time]) に変更
+    const usedPct = Math.min((count / maxCap) * 100, 100);
 
     // バーアニメーション（少し遅延させて見せる）
     setTimeout(() => { fillEl.style.width = usedPct + "%"; }, 100);
