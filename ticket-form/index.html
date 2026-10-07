@@ -618,7 +618,7 @@
     .error-msg .icon { flex-shrink: 0; font-size: 14px; }
 
     /* ===== 申請済み画面 ===== */
-    .already-header {
+    .already-er {
       display: flex;
       align-items: center;
       gap: 12px;
@@ -633,12 +633,12 @@
       font-size: 18px;
       color: var(--green);
     }
-    .already-header h2 {
+    .already-er h2 {
       font-size: 16px;
       font-weight: 700;
       color: var(--gray-800);
     }
-    .already-header p {
+    .already-er p {
       font-size: 12px;
       color: var(--gray-600);
       margin-top: 2px;
@@ -849,9 +849,9 @@
     @media (max-width: 480px) {
       body { padding: 12px; }
       .card-body { padding: 20px; }
-      .card-header { padding: 20px; }
+      .card-er { padding: 20px; }
       .steps { padding: 12px 20px; }
-      .card-header h1 { font-size: 18px; }
+      .card-er h1 { font-size: 18px; }
       .festival-logo { width: 120px; top: 20px; right: 16px; }
       .steps { gap: 2px; }
       .step { min-width: 0; }
@@ -859,7 +859,7 @@
       .step:not(:last-child)::after { left: 32px; width: calc(100% - 32px); }
     }
   </style>
-</head>
+</>
 <body>
 
 
@@ -1097,6 +1097,16 @@
 
    </div><!-- /card-body -->
 </div><!-- /card -->
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-7MCVTZVKM4"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-7MCVTZVKM4');
+</script>
 
 <script>
   // Google Sign-In コールバック
