@@ -21,27 +21,6 @@ $("#rules").textContent =
   `各リーグ1位どうしが決勝、2位どうしが3位決定戦です（全${MATCHES.ALL.length + 2}試合）。` +
   (S.draw ? "リーグ戦の引き分けは認め、決勝・3位決定戦で同点のときはPK戦（または延長）の勝者を入力します。" : "引き分けはありません。");
 
-/* ---------- 決勝・3位決定戦 ---------- */
-function sportBracket(sts, results) {
-  const [L1, L2] = LEAGUES, [s1, s2] = sts;
-  const pick = (st, k) => (st.settled ? st.rows[k - 1].c : null);   // 確定
-  const prov = (st, k) => (st.done > 0 ? st.rows[k - 1].c : null);  // 暫定
-  const mk = (id, name, aSrc, bSrc, a, b, pa, pb) => {
-    const raw = results[id];
-    let rec = null, stale = false;
-    if (raw) {
-      if (a && b && ((raw.a === a && raw.b === b) || (raw.a === b && raw.b === a))) rec = orient(raw, a);
-      else stale = true; // リーグ戦の修正で対戦カードが変わった
-    }
-    const winner = rec ? koWinner(rec) : null;
-    return { id, name, aSrc, bSrc, a, b, pa, pb, rec, stale, winner, loser: winner ? (winner === a ? b : a) : null, ready: !!(a && b), ko: true };
-  };
-  return [
-    mk("F", "決勝", `${L1.name}1位`, `${L2.name}1位`, pick(s1, 1), pick(s2, 1), prov(s1, 1), prov(s2, 1)),
-    mk("TP", "3位決定戦", `${L1.name}2位`, `${L2.name}2位`, pick(s1, 2), pick(s2, 2), prov(s1, 2), prov(s2, 2)),
-  ];
-}
-
 /* ---------- リーグの図（五角形・四角形） ---------- */
 function leagueSVG(L, st) {
   const n = L.classes.length, R = n === 4 ? 160 : 150, cx = 220, cy = 205;
@@ -147,7 +126,7 @@ function entryList() {
     id: m.id, a: m.a, b: m.b, label: `第${m.no}試合`, kind: leagueOf(m.a).name, ko: false, ready: true, rec: getRec(m, DATA.results),
   }));
   const ko = KO.map(k => ({
-    id: k.id, a: k.a, b: k.b, label: k.name, kind: "決勝トーナメント", ko: true, ready: k.ready, rec: k.rec, stale: k.stale, aSrc: k.aSrc, bSrc: k.bSrc,
+    id: k.id, a: k.a, b: k.b, label: k.name, kind: "決勝・3位決定戦", ko: true, ready: k.ready, rec: k.rec, stale: k.stale, aSrc: k.aSrc, bSrc: k.bSrc,
   }));
   return [...lg, ...ko];
 }
@@ -224,7 +203,7 @@ async function load(force) {
   try {
     DATA = await API.load();
     STS = LEAGUES.map(L => standings(L, DATA.results, DATA.overrides));
-    KO = sportBracket(STS, DATA.results);
+    KO = bracket(STS, DATA.results);
     render(force);
     $("#upd").textContent = "最終更新 " + new Date().toLocaleTimeString("ja-JP");
     $("#err").textContent = "";
