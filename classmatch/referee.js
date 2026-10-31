@@ -39,7 +39,7 @@ function renderChips() {
   const ms = matches();
   $("#chips").innerHTML =
     `<h2 class="group">リーグ戦</h2><div class="chips">${ms.filter(m => !m.ko).map(chip).join("")}</div>` +
-    `<h2 class="group">決勝トーナメント</h2><div class="chips">${ms.filter(m => m.ko).map(chip).join("")}</div>`;
+    `<h2 class="group">決勝・3位決定戦</h2><div class="chips">${ms.filter(m => m.ko).map(chip).join("")}</div>`;
 }
 
 function select(id) {
