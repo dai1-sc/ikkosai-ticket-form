@@ -1,5 +1,5 @@
 "use strict";
-/* 本部用：リーグ表・得失点差・決勝トーナメント・全結果 */
+/* 本部用：リーグ表・得失点差・決勝・3位決定戦・全結果 */
 
 let DATA = null, STS = [], KO = [], timer = null;
 const draft = {}; // 同率の手動並べ替え（作業中）
@@ -11,7 +11,7 @@ if (API.local) {
 $("#rules").textContent =
   `1試合は${SP.games.min}ゲーム、勝ちゲーム数が並べば次のゲーム（最大${SP.games.max}ゲーム）。試合の勝敗は勝ちゲーム数で決まり、並んだときは勝ったゲームの内野差の合計、それも同じならサドンデスで決めます（引き分けなし）。` +
   `得失点は、試合に勝った側が勝ったゲームの内野差（内野の残り人数の差）の合計で、負けた側が勝ったゲームの内野差は数えません。` +
-  `順位の決め方：勝点（勝${SP.points.win}・分${SP.points.draw}・負${SP.points.lose}）→ 得失点差。それでも同じときは順位決定サドンデスで決めます。各リーグ上位${SP.advance}クラスが準決勝へ。`;
+  `順位の決め方：勝点（勝${SP.points.win}・分${SP.points.draw}・負${SP.points.lose}）→ 得失点差。それでも同じときは順位決定サドンデスで決めます。各リーグの1位どうしが決勝、2位どうしが3位決定戦です（全${ALL_LEAGUE_MATCHES.length + 2}試合）。`;
 
 const nm = c => c + "組";
 
@@ -58,9 +58,11 @@ function leagueSVG(L, st) {
 
 /* ---------- 順位表 ---------- */
 function tableHTML(st) {
-  const rows = st.rows.map(r => {
+  const rows = st.rows.map((r, idx) => {
     const adv = st.done > 0 && r.p > 0 && r.rank <= SP.advance;
-    const tag = adv ? (st.settled ? '<span class="tag">準決勝進出</span>' : '<span class="tag prov">進出圏</span>') : "";
+    const where = idx === 0 ? ["決勝へ", "決勝圏"] : ["3位決定戦へ", "3位決定戦圏"];
+    const tag = !adv ? "" : r.tie ? '<span class="tag prov">進出圏</span>'
+      : st.settled ? `<span class="tag">${where[0]}</span>` : `<span class="tag prov">${where[1]}</span>`;
     const rank = st.done === 0 ? "–" : r.tie ? `${r.rank}<small>同率</small>` : r.rank;
     return `<tr class="${adv ? "adv" : ""}"><td class="l">${rank}</td><td class="l cls">${nm(r.c)}${tag}</td>
       <td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.pts}</td>
@@ -85,7 +87,7 @@ function leagueHTML(st) {
     ${leagueSVG(L, st)}${tableHTML(st)}${noticeHTML(st)}</div>`;
 }
 
-/* ---------- 決勝トーナメント ---------- */
+/* ---------- 決勝・3位決定戦 ---------- */
 function koHTML(k) {
   const team = (c, pc, src) => {
     if (c) return `<span class="n">${nm(c)}</span>`;
@@ -103,8 +105,8 @@ function koHTML(k) {
     ${note}</div>`;
 }
 function bracketHTML() {
-  const [sf1, sf2, tp, fin] = KO;
-  let html = `<div class="kos">${koHTML(sf1)}${koHTML(sf2)}${koHTML(tp)}${koHTML(fin)}</div>`;
+  const [fin, tp] = KO;
+  let html = `<div class="kos">${koHTML(fin)}${koHTML(tp)}</div>`;
   if (fin.winner && tp.winner) {
     html += `<div class="podium"><div><small>優勝</small>${nm(fin.winner)}</div><div><small>準優勝</small>${nm(fin.loser)}</div>
       <div><small>3位</small>${nm(tp.winner)}</div><div><small>4位</small>${nm(tp.loser)}</div></div>`;
@@ -138,7 +140,7 @@ function resultsHTML() {
       const w = rec ? (outcome(rec) === "A" ? m.a : outcome(rec) === "B" ? m.b : null) : null;
       return row(`第${m.no}試合`, leagueOf(m.a).name, m.a, m.b, rec, "", "", w);
     }),
-    ...KO.map(k => row(k.name, "トーナメント", k.a, k.b, k.rec, k.aSrc, k.bSrc, k.winner)),
+    ...KO.map(k => row(k.name, "決勝・3位決定戦", k.a, k.b, k.rec, k.aSrc, k.bSrc, k.winner)),
   ].join("");
   return `<table><thead><tr><th class="l">試合</th><th class="l">区分</th><th class="l">左</th><th>ゲーム</th><th class="l">右</th><th class="l">各ゲームの内野の残り（左−右）</th><th>得失点差</th></tr></thead><tbody>${body}</tbody></table>`;
 }
