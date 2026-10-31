@@ -383,12 +383,19 @@ function standings(L, results, overrides) {
   };
 }
 
-/* ---------- 決勝トーナメント ---------- */
+/* ---------- 決勝・3位決定戦（全試合数＝リーグ戦＋2試合） ---------- */
+// 組み合わせは競技の設定 bracket で決める。"リーグid-順位" の組。
+//   既定：決勝＝各リーグ1位どうし（"1-1" と "2-1"）／3位決定戦＝各リーグ2位どうし（"1-2" と "2-2"）
 function bracket(sts, results) {
-  const [L1, L2] = LEAGUES, [s1, s2] = sts;
-  const pick = (st, k) => (st.settled ? st.rows[k - 1].c : null);   // 確定
-  const prov = (st, k) => (st.done > 0 ? st.rows[k - 1].c : null);  // 暫定
-  const mk = (id, name, aSrc, bSrc, a, b, pa, pb) => {
+  const B = SP.bracket || { final: ["1-1", "2-1"], third: ["1-2", "2-2"] };
+  const ref = t => {
+    const [lid, k] = t.split("-").map(Number), i = LEAGUES.findIndex(L => L.id === lid);
+    return { name: LEAGUES[i].name + k + "位", st: sts[i], k };
+  };
+  const pick = r => (r.st.settled ? r.st.rows[r.k - 1].c : null);   // 確定
+  const prov = r => (r.st.done > 0 ? r.st.rows[r.k - 1].c : null);  // 暫定
+  const mk = (id, name, pair) => {
+    const A = ref(pair[0]), Bt = ref(pair[1]), a = pick(A), b = pick(Bt);
     const raw = results[id];
     let rec = null, stale = false;
     if (raw) {
@@ -397,15 +404,11 @@ function bracket(sts, results) {
     }
     const winner = rec ? koWinner(rec) : null;
     return {
-      id, name, title: name, sub: "決勝トーナメント", aSrc, bSrc, a, b, pa, pb, rec, stale,
+      id, name, title: name, sub: "決勝・3位決定戦", aSrc: A.name, bSrc: Bt.name, a, b, pa: prov(A), pb: prov(Bt), rec, stale,
       winner, loser: winner ? (winner === a ? b : a) : null, ready: !!(a && b), ko: true,
     };
   };
-  const sf1 = mk("SF1", "準決勝A", `${L1.name}1位`, `${L2.name}2位`, pick(s1, 1), pick(s2, 2), prov(s1, 1), prov(s2, 2));
-  const sf2 = mk("SF2", "準決勝B", `${L2.name}1位`, `${L1.name}2位`, pick(s2, 1), pick(s1, 2), prov(s2, 1), prov(s1, 2));
-  const tp = mk("TP", "3位決定戦", "準決勝A敗者", "準決勝B敗者", sf1.loser, sf2.loser);
-  const fin = mk("F", "決勝", "準決勝A勝者", "準決勝B勝者", sf1.winner, sf2.winner);
-  return [sf1, sf2, tp, fin];
+  return [mk("F", "決勝", B.final), mk("TP", "3位決定戦", B.third)];
 }
 
 if (typeof module !== "undefined") {
